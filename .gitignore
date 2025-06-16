@@ -30,3 +30,17 @@
 *.exe
 *.out
 *.app
+
+build/
+cmake-build-*/
+out/
+*.cmake
+CMakeCache.txt
+CMakeFiles/
+.idea/
+*.vcxproj
+*.sln
+*.exe
+*.DS_Store
+Thumbs.db
+.vs
