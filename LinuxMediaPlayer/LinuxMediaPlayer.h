@@ -5,7 +5,13 @@
 
 #include <iostream>
 #include <dirent.h>
-#include <memory>
+#include <filesystem>
+#include <stdio.h>
+#include <vector>
+#include <queue>
+#include <unordered_set>
 #include <sys/stat.h>
 
-// TODO: Reference additional headers your program requires here.
+/*ncurses has to be installed on target machine ? \
+ncurses isn't on Windows, so this will show as error but compile normal if use WSL or on Linux*/
+#include <ncurses.h> 

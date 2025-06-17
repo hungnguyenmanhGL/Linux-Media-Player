@@ -2,43 +2,57 @@
 #include "LinuxMediaPlayer.h"
 using namespace std;
 
-void ListFilesInDirectory(const string& path) {
-	DIR* dir;
-	struct dirent* ent;
-    // Open the directory
-    if ((dir = opendir(path.c_str())) != NULL) {
-        while ((ent = readdir(dir)) != NULL) {
-            string entryName = ent->d_name;
-            string fullPath = path + "/" + entryName;
+namespace fs = std::filesystem;
 
-            // Get details on entries
-            struct stat entryStat;
-            if (stat(fullPath.c_str(), &entryStat) == 0) {
-                if (S_ISDIR(entryStat.st_mode)) { //check if entry is directory
-                    cout << "[DIR] " << entryName << endl;
-                }
-                else if (S_ISREG(entryStat.st_mode)) { //check if entry is file
-                    cout << "[FILE] " << entryName << endl;
-                }
-                else { //others
-                    cout << "[OTHER] " << entryName << endl;
-                }
+unordered_set<string> extSet{ ".mp3", ".mp4"};
+
+void GetMediaList(const fs::path& path, vector<string>& mediaList) {
+    queue<fs::directory_entry> dirList;
+    try {
+        for (const fs::directory_entry& entry : fs::directory_iterator(path)) {
+            if (entry.is_directory()) {
+                dirList.push(entry);
             }
-            else {
-                cerr << "Error getting stat for " << fullPath << endl;
+            else if (entry.is_regular_file()) {
+                if (extSet.contains(entry.path().extension().string())) {
+                    mediaList.push_back(entry.path());
+                }
             }
         }
-        closedir(dir);
     }
-    else {
-        cerr << "Error: Could not open directory " << path << std::endl;
-        perror("opendir");
+    catch (const fs::filesystem_error& e) {
+        cerr << "Error accessing dir: " << e.what() << endl;
     }
+
+    while (!dirList.empty()) {
+        for (const fs::directory_entry& entry : fs::directory_iterator(dirList.front())) {
+            if (entry.is_directory()) {
+                cout << "[DIR] " << entry.path() << endl;
+                dirList.push(entry);
+            }
+            else if (entry.is_regular_file()) {
+                cout << "[FILE] " << entry.path() << endl;
+                if (extSet.contains(entry.path().extension().string())) {
+                    mediaList.push_back(entry.path());
+                }
+            }
+        }
+        dirList.pop();
+    }
+}
+
+void ListMediaInDirectory(const string& path) {
+    vector<string> mediaList;
+    GetMediaList(path, mediaList);
+    for (int i = 0; i < mediaList.size(); i++) {
+        printf("%d.  %s\n", i + 1, mediaList[i].c_str());
+    }
+
+    int cmd;
 }
 
 int main()
 {
-    cout << "Start\n.";
-    ListFilesInDirectory(".");
+    ListMediaInDirectory(".");
 	return 0;
 }
