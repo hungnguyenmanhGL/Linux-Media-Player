@@ -11,11 +11,9 @@ endif()
 
 project ("LinuxMediaPlayer")
 
-find_package(Curses REQUIRED)
-include_directories(${Curses_INCLUDE_DIRS})
 
 # Add source to this project's executable.
-add_executable (LinuxMediaPlayer "LinuxMediaPlayer.cpp" "LinuxMediaPlayer.h")
+add_executable (LinuxMediaPlayer "LinuxMediaPlayer.cpp" "LinuxMediaPlayer.h" "Manager.h"  "Helper.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET LinuxMediaPlayer PROPERTY CXX_STANDARD 20)
