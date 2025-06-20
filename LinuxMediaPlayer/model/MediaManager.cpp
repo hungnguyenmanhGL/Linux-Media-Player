@@ -1,0 +1,77 @@
+#include "MediaManager.h"
+
+MediaManager::MediaManager()
+{
+    playlists.push_back(Playlist("Favorite"));
+    playlists.push_back(Playlist("Starred"));
+}
+
+MediaManager::~MediaManager()
+{
+}
+
+void MediaManager::GetAllMedia(const fs::path& path) {
+    queue<fs::directory_entry> dirList;
+    try {
+        fs::directory_entry cur(path);
+        dirList.push(cur);
+    }
+    catch (const fs::filesystem_error& e) {
+        cerr << "Error accessing dir: " << e.what() << endl;
+    }
+
+    while (!dirList.empty()) {
+        for (const fs::directory_entry& entry : fs::directory_iterator(dirList.front())) {
+            if (entry.is_directory()) {
+                //cout << "[DIR] " << entry.path() << endl;
+                dirList.push(entry);
+            }
+            else if (entry.is_regular_file()) {
+                //cout << "[FILE] " << entry.path() << endl;
+                string ext = entry.path().extension().string();
+                if (audioExtSet.contains(ext)) {
+                    shared_ptr<AudioFile> audio(
+                        new AudioFile(entry.path(), entry.path().filename(), entry.file_size(), 0));
+                    mediaList.push_back(audio);
+                }
+                else if (videoExtSet.contains(ext)) {
+                    shared_ptr<VideoFile> video(
+                        new VideoFile(entry.path(), entry.path().filename(), entry.file_size(), 0));
+                    mediaList.push_back(video);
+                }
+                //if (testing) mediaList.push_back(entry.path());
+            }
+        }
+        dirList.pop();
+    }
+    cout << "Total file count: " << mediaList.size() << endl;
+}
+
+void MediaManager::CreatePlaylist(const string& name) {
+    playlists.push_back(Playlist(name));
+    printf("Created playlist %s.\n", name.c_str());
+}
+
+void MediaManager::DeletePlaylist(const int& index) {
+    string delName = playlists[index].Name();
+    playlists.erase(playlists.begin() + index);
+    printf("Deleted playlist %s.\n", delName.c_str());
+}
+
+void MediaManager::UpdatePlaylistName(const int& index, const string& name) {
+    string oldName = playlists[index].Name();
+    (playlists.begin() + index)->SetName(name);
+    printf("Playlist's name changed: [OLD] %s -> [NEW] %s.\n", oldName.c_str(), name.c_str());
+}
+
+void MediaManager::AddMediaToPlaylist(const int& plIndex, const int& mediaIndex) {
+    shared_ptr<MediaFile>& media = mediaList[mediaIndex];
+    playlists[plIndex].AddMedia(media);
+    printf("Added %s to playlist %s.\n", media->Name().c_str(), playlists[plIndex].Name().c_str());
+}
+
+void MediaManager::RemoveMediaFromPlaylist(const int& plIndex, const int& mediaIndex) {
+    string mediaName = playlists[plIndex].At(mediaIndex)->Name();
+    playlists[plIndex].RemoveMedia(mediaIndex);
+    printf("Removed %s from playlist %s.\n", mediaName.c_str(), playlists[plIndex].Name().c_str());
+}

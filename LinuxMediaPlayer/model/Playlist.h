@@ -1,0 +1,34 @@
+#pragma once
+#include <iostream>
+#include <filesystem>
+#include <vector>
+#include <memory>
+#include "MediaFile.h"
+using namespace std;
+
+class Playlist
+{
+public:
+	Playlist() {};
+	Playlist(const string& name);
+	~Playlist() {};
+
+	//getters
+	string Name() { return this->name; }
+	vector<shared_ptr<MediaFile>>& MediaList() { return this->mediaList; }
+
+	//setter
+	void SetName(const string& name) { this->name = name;}
+
+	void AddMedia(shared_ptr<MediaFile>& media);
+
+	void RemoveMedia(const int& index);
+
+	shared_ptr<MediaFile> At(const int& index);
+
+	void Print();
+
+private:
+	string name;
+	vector<shared_ptr<MediaFile>> mediaList;
+};
