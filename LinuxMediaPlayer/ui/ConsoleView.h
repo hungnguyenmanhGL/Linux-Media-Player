@@ -23,6 +23,8 @@ public:
 
 	void PrintPlaylists(MediaManager& manager);
 
+	void PrintMediaData(MediaManager& manager, const int& index);
+
 	//getters
 	int LastPage() { return this->lastPage; }
 	int CurrentPage() { return this->curPage; }

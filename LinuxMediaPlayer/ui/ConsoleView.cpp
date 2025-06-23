@@ -23,7 +23,11 @@ void ConsoleView::PrintMediaList(MediaManager& manager) {
 }
 
 void ConsoleView::PrintMediaCmdPrompt() {
-    cout << "Input command ([P]rev, [N]ext, [G]o to page, [Q]uit): ";
+    cout << "Input command ([P]rev, [N]ext, [G]o to page, Show media [D]etails, [Q]uit): ";
+}
+
+void ConsoleView::PrintMediaData(MediaManager& manager, const int& index) {
+    manager.MediaList()[index]->Print();
 }
 
 #pragma region SHOW_MEDIA_PAGES

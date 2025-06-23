@@ -21,6 +21,12 @@ void Controller::MainLoop() {
         cmd = toupper(cmd);
 
         switch (cmd) {
+        case 'D': {
+            cout << "Input entry index to show details. ";
+            int index = Helper::InputInt(0, manager.FileCount() - 1);
+            console.PrintMediaData(manager, index);
+            break;
+        }
         case 'Q': {
             return;
         }
