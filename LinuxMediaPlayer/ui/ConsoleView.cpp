@@ -34,7 +34,10 @@ void ConsoleView::PrintMediaPage(const int& page, MediaManager& manager) {
 
     for (int i = 0; i < cnt; i++) {
         int index = startIndex + i;
-        printf("%d.  %s\n", index, manager.MediaList()[i]->Name().c_str());
+        if (manager.MediaList()[index]->Type() == MediaType::AUDIO)
+            printf("%d. AUDIO - %s\n", index, manager.MediaList()[index]->Name().c_str());
+        else 
+            printf("%d. VIDEO - %s\n", index, manager.MediaList()[index]->Name().c_str());
     };
     printf("Viewing page %d of %d.\n", page, lastPage);
 }

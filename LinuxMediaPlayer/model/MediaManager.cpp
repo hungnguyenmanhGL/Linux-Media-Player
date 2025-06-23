@@ -44,11 +44,11 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                         tag->title().toCString(), tag->artist().toCString(), 
                         tag->album().toCString(), tag->genre().toCString(), tag->year(),
                         entry.file_size(), fileRef.audioProperties()->lengthInSeconds()));
-
                     mediaList.push_back(audio);
                 }
                 else if (videoExtSet.contains(ext)) {
                     TagLib::FileRef fileRef(entry.path().c_str());
+                    TagLib::MP4::Properties* mp4Pro = dynamic_cast<TagLib::MP4::Properties*>(fileRef.audioProperties());
                     if (fileRef.isNull() || fileRef.tag() == nullptr) {
                         cerr << "[TagLib-ERROR] Cannot open file or no tags found for " << entry.path() << endl;
                     }
@@ -57,7 +57,8 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                     shared_ptr<VideoFile> video(new VideoFile(entry.path(), entry.path().filename(),
                         tag->title().toCString(), tag->artist().toCString(),
                         tag->album().toCString(), tag->genre().toCString(), tag->year(),
-                        entry.file_size(), fileRef.audioProperties()->lengthInSeconds()));
+                        entry.file_size(), fileRef.audioProperties()->lengthInSeconds(),
+                        mp4Pro->bitrate(), mp4Pro->codec()));
                     mediaList.push_back(video);
                 }
             }

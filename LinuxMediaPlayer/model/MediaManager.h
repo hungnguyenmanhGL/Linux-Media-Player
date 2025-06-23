@@ -7,7 +7,8 @@
 #include "AudioFile.h"
 #include "VideoFile.h"
 
-//TagLib is installed on Linux side, this will only compile in Linux (Windows will show compile error)
+//TagLib is installed on Linux side, 
+// this will only compile in Linux (Windows will show compile error if not taret linked in cmake)
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 
