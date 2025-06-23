@@ -4,7 +4,7 @@ using namespace std;
 
 int main()
 {
-	Manager manager;
-	manager.MainViewLoop();
+	Controller control;
+	control.MainLoop();
 	return 0;
 }

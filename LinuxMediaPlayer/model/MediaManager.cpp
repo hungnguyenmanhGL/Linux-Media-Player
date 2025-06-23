@@ -1,9 +1,13 @@
 #include "MediaManager.h"
 
+unordered_set<string> audioExtSet = { ".mp3", ".wav" };
+unordered_set<string> videoExtSet = { ".mp4" };
+
 MediaManager::MediaManager()
 {
     playlists.push_back(Playlist("Favorite"));
     playlists.push_back(Playlist("Starred"));
+    GetAllMedia(".");
 }
 
 MediaManager::~MediaManager()
@@ -30,21 +34,37 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                 //cout << "[FILE] " << entry.path() << endl;
                 string ext = entry.path().extension().string();
                 if (audioExtSet.contains(ext)) {
-                    shared_ptr<AudioFile> audio(
-                        new AudioFile(entry.path(), entry.path().filename(), entry.file_size(), 0));
+                    TagLib::FileRef fileRef(entry.path().c_str());
+                    if (fileRef.isNull() || fileRef.tag() == nullptr) {
+                        cerr << "[TagLib-ERROR] Cannot open file or no tags found for " << entry.path() << endl;
+                    }
+                    TagLib::Tag* tag = fileRef.tag();
+
+                    shared_ptr<AudioFile> audio(new AudioFile(entry.path(), entry.path().filename(), 
+                        tag->title().toCString(), tag->artist().toCString(), 
+                        tag->album().toCString(), tag->genre().toCString(), tag->year(),
+                        entry.file_size(), fileRef.audioProperties()->lengthInSeconds()));
+
                     mediaList.push_back(audio);
                 }
                 else if (videoExtSet.contains(ext)) {
-                    shared_ptr<VideoFile> video(
-                        new VideoFile(entry.path(), entry.path().filename(), entry.file_size(), 0));
+                    TagLib::FileRef fileRef(entry.path().c_str());
+                    if (fileRef.isNull() || fileRef.tag() == nullptr) {
+                        cerr << "[TagLib-ERROR] Cannot open file or no tags found for " << entry.path() << endl;
+                    }
+                    TagLib::Tag* tag = fileRef.tag();
+
+                    shared_ptr<VideoFile> video(new VideoFile(entry.path(), entry.path().filename(),
+                        tag->title().toCString(), tag->artist().toCString(),
+                        tag->album().toCString(), tag->genre().toCString(), tag->year(),
+                        entry.file_size(), fileRef.audioProperties()->lengthInSeconds()));
                     mediaList.push_back(video);
                 }
-                //if (testing) mediaList.push_back(entry.path());
             }
         }
         dirList.pop();
     }
-    cout << "Total file count: " << mediaList.size() << endl;
+    cout << "Total media file count: " << mediaList.size() << endl;
 }
 
 void MediaManager::CreatePlaylist(const string& name) {

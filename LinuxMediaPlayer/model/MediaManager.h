@@ -7,10 +7,14 @@
 #include "AudioFile.h"
 #include "VideoFile.h"
 
+//TagLib is installed on Linux side, this will only compile in Linux (Windows will show compile error)
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
+
 namespace fs = std::filesystem;
 
-unordered_set<string> audioExtSet{ ".mp3", ".wav" };
-unordered_set<string> videoExtSet{ ".mp4" };
+extern unordered_set<string> audioExtSet;
+extern unordered_set<string> videoExtSet;
 
 class MediaManager
 {

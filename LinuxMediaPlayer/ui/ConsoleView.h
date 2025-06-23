@@ -21,6 +21,8 @@ public:
 
 	void PrintNextMediaPage(MediaManager& manager);
 
+	void PrintPlaylists(MediaManager& manager);
+
 	//getters
 	int LastPage() { return this->lastPage; }
 	int CurrentPage() { return this->curPage; }

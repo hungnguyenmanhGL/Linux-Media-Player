@@ -11,11 +11,14 @@ endif()
 
 project ("LinuxMediaPlayer")
 
+find_package(ZLIB)
+find_package(TagLib 2.0.0 REQUIRED)
+
 # Add source to this project's executable.
 add_executable (LinuxMediaPlayer 
     "LinuxMediaPlayer.cpp" 
     "LinuxMediaPlayer.h" 
-    "Manager.h"  
+      
     "Helper.h"  
     "model/Playlist.h" "model/Playlist.cpp"
     "model/MediaFile.h" "model/MediaFile.cpp" 
@@ -23,7 +26,7 @@ add_executable (LinuxMediaPlayer
     "model/VideoFile.h" "model/VideoFile.cpp" 
     "model/MediaManager.h" "model/MediaManager.cpp"
     "ui/ConsoleView.h" "ui/ConsoleView.cpp"
-    "controller/Controller.h" "controller/Controller.cpp")
+    "controller/Controller.h" "controller/Controller.cpp" "Helper.cpp")
 
 target_include_directories(LinuxMediaPlayer 
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -31,6 +34,8 @@ target_include_directories(LinuxMediaPlayer
     PUBLIC ui
     PUBLIC controller
 )
+
+target_link_libraries(LinuxMediaPlayer TagLib::tag)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET LinuxMediaPlayer PROPERTY CXX_STANDARD 20)

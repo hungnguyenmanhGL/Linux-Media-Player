@@ -26,7 +26,7 @@ public:
 
 	shared_ptr<MediaFile> At(const int& index);
 
-	void Print();
+	void Print(bool showContent);
 
 private:
 	string name;
