@@ -20,7 +20,7 @@ shared_ptr<MediaFile> Playlist::At(const int& index) {
 }
 
 void Playlist::Print(bool showContent = false) {
-	printf("Playlist %s has %d entry(s).\n", name.c_str(), mediaList.size());
+	printf("%s - %d entry(s).\n", name.c_str(), mediaList.size());
 	if (showContent) {
 		for (int i = 0; i < mediaList.size(); i++) {
 			printf(" %d. %s\n", i, mediaList[i]->Name().c_str());

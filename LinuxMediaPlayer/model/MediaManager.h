@@ -32,6 +32,8 @@ public:
 
 	void UpdatePlaylistName(const int& index, const string& name);
 
+	bool IsPlaylistNameValid(const string& name);
+
 	/*Add a media file to a playlist,
 	playlistIndex is the target playlist's index in playlists, mediaIndex is target media's index in mediaList*/
 	void AddMediaToPlaylist(const int& playlistIndex, const int& mediaIndex);
@@ -44,9 +46,11 @@ public:
 	vector<shared_ptr<MediaFile>> MediaList() { return this->mediaList; }
 	vector<Playlist> Playlists() { return this->playlists; }
 	int FileCount() { return this->mediaList.size(); }
+	int PlaylistCount() { return this->playlists.size(); }
 
 private:
 	vector<shared_ptr<MediaFile>> mediaList;
 	vector<Playlist> playlists;
+	unordered_set<string> playlistNameSet;
 };
 

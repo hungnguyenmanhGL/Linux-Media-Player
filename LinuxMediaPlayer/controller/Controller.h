@@ -11,6 +11,10 @@ public:
 
 	void MainLoop();
 
+	bool PlaylistLoop();
+
+	void ContentLoop(const int& plIndex);
+
 private:
 	MediaManager manager;
 	ConsoleView console;

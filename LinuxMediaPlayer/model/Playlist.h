@@ -16,6 +16,7 @@ public:
 	//getters
 	string Name() { return this->name; }
 	vector<shared_ptr<MediaFile>>& MediaList() { return this->mediaList; }
+	int Count() { return this->mediaList.size(); }
 
 	//setter
 	void SetName(const string& name) { this->name = name;}

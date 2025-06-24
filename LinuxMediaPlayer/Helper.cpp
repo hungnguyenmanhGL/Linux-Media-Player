@@ -8,7 +8,7 @@ Helper::~Helper()
 {
 }
 
-int Helper::InputInt(int minInclu, int maxInclu = -999) {
+int Helper::InputInt(int minInclu, int maxInclu) {
 	int val = minInclu - 1;
 	if (minInclu >= maxInclu) {
 		do {
@@ -41,4 +41,15 @@ int Helper::InputInt(int minInclu, int maxInclu = -999) {
 		} while (cin.fail() || val < minInclu || val > maxInclu);
 	}
 	return val;
+}
+
+string Helper::InputString(const string& inputMsg, function<bool(const string&)> checkFunc) {
+	string res;
+	bool allowed = false;
+	do {
+		cout << inputMsg;
+		getline(cin, res);
+		allowed = checkFunc(res);
+	} while (!allowed);
+	return res;
 }

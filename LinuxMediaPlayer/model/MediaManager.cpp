@@ -70,19 +70,29 @@ void MediaManager::GetAllMedia(const fs::path& path) {
 
 void MediaManager::CreatePlaylist(const string& name) {
     playlists.push_back(Playlist(name));
+    playlistNameSet.insert(name);
     printf("Created playlist %s.\n", name.c_str());
 }
 
 void MediaManager::DeletePlaylist(const int& index) {
     string delName = playlists[index].Name();
     playlists.erase(playlists.begin() + index);
+    playlistNameSet.erase(delName);
     printf("Deleted playlist %s.\n", delName.c_str());
 }
 
 void MediaManager::UpdatePlaylistName(const int& index, const string& name) {
     string oldName = playlists[index].Name();
     (playlists.begin() + index)->SetName(name);
+    playlistNameSet.erase(oldName);
+    playlistNameSet.insert(name);
     printf("Playlist's name changed: [OLD] %s -> [NEW] %s.\n", oldName.c_str(), name.c_str());
+}
+
+bool MediaManager::IsPlaylistNameValid(const string& name) {
+    bool res = playlistNameSet.contains(name);
+    if (res) printf("Playlist %s already exists, try another name.\n", name.c_str());
+    return !res;
 }
 
 void MediaManager::AddMediaToPlaylist(const int& plIndex, const int& mediaIndex) {
