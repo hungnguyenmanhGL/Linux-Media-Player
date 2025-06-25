@@ -48,6 +48,9 @@ public:
 	int FileCount() { return this->mediaList.size(); }
 	int PlaylistCount() { return this->playlists.size(); }
 
+	Playlist& GetPlaylist(const int& index);
+	shared_ptr<MediaFile>& GetMedia(const int& index);
+
 private:
 	vector<shared_ptr<MediaFile>> mediaList;
 	vector<Playlist> playlists;

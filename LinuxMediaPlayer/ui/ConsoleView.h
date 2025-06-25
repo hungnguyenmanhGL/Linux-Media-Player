@@ -8,7 +8,8 @@ using namespace std;
 enum ConsoleState {
 	MEDIA_LIST = 0,
 	PLAYLIST = 1,
-	PLAYLIST_CONTENT = 2
+	PLAYLIST_CONTENT = 2,
+	ADD_MEDIA_PLAYLIST = 3
 };
 
 class ConsoleView
@@ -20,7 +21,7 @@ public:
 
 	void Clear();
 
-	void PrintMediaCmdPrompt();
+	void PrintCmdPrompt();
 
 	void PrintMediaPage(const int& page, MediaManager& manager);
 
@@ -37,8 +38,8 @@ public:
 	//calculate page number for playlists. reset = true -> set current playlist page = 0
 	void CalculatePlaylistPages(MediaManager& manager, bool reset = false);
 
-	//calculate page number for playlist content. reset = true -> set current content page = 0
-	void CalculatePlaylistContentPages(Playlist& pl, bool reset = false);
+	//calculate page number for playlist content.
+	void CalculatePlaylistContentPages(Playlist& pl);
 
 
 	//print to console all playlists by page,
@@ -50,9 +51,11 @@ public:
 	void PrintNextPlaylistPage(MediaManager& manager);
 
 
-
 	//playlist's entry number can be changed in runtime, need to re-calculate page number
-	void PrintPlaylistContentPage(Playlist& pl, const int& page, const int& lastPage);
+	void PrintPlaylistContentPage(Playlist& pl, const int& page);
+
+	//Add newspace to seperate console texts
+	void Seperate() { cout << " \n" << endl; }
 
 	//getters
 	int LastMediaPage() { return this->lastMediaPage; }
@@ -75,7 +78,6 @@ private:
 	int curPlPage;
 	int lastPlPage;
 
-	int curContentPage;
 	int lastContentPage;
 
 	ConsoleState state;

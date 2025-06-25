@@ -9,7 +9,7 @@ ConsoleView::ConsoleView(MediaManager& manager) {
     curMediaPage = 0;
     entryCnt = manager.FileCount();
     lastMediaPage = entryCnt / entryPerPage - 1;
-    if (entryCnt % entryPerPage > 0) lastMediaPage++;
+    if (entryCnt % entryPerPage > 0 || entryCnt == 0) lastMediaPage++;
 }
 
 ConsoleView::~ConsoleView()
@@ -17,19 +17,19 @@ ConsoleView::~ConsoleView()
 }
 
 void ConsoleView::Clear() {
-    system("clear");
+    //system("clear");
 }
 
 void ConsoleView::PrintMediaList(MediaManager& manager) {
     for (int i = 0; i < entryCnt; i++) {
-        printf("%d.  %s\n", i + 1, manager.MediaList()[i]->Path().c_str());
+        printf("%d.  %s\n", i + 1, manager.GetMedia(i)->Path().c_str());
     }
 }
 
-void ConsoleView::PrintMediaCmdPrompt() {
+void ConsoleView::PrintCmdPrompt() {
     switch (state) {
     case ConsoleState::MEDIA_LIST: {
-        cout << "Input command.\n"
+        cout << "Viewing list of media. Input command.\n"
             " [P]rev, [N]ext, [G]o to page\n"
             " Show media [D]etails\n"
             " [S]witch to playlist\n"
@@ -37,7 +37,7 @@ void ConsoleView::PrintMediaCmdPrompt() {
         break;
     }
     case ConsoleState::PLAYLIST: {
-        cout << "Input command.\n"
+        cout << "Viewing playlists. Input command.\n"
             " [P]rev, [N]ext, [G]o to page\n"
             " Playlist [C]ontent, [U]pdate playlist name\n"
             " [A]dd playlist, [D]elete playlist\n"
@@ -46,10 +46,17 @@ void ConsoleView::PrintMediaCmdPrompt() {
         break;
     }
     case ConsoleState::PLAYLIST_CONTENT: {
-        cout << "Input command.\n"
+        cout << "Viewing playlist's content. Input command.\n"
             " [P]rev media page, [N]ext media page, [G]o to page\n"
             " [A]dd media, [R]emove media, Show media [D]etails\n"
             " [B]ack. Command: ";
+        break;
+    }
+    case ConsoleState::ADD_MEDIA_PLAYLIST: {
+        cout << "Adding media to playlist. Input command.\n"
+            " [P]rev media page, [N]ext media page, [G]o to page\n"
+            " [A]dd media to playlist\n"
+            " Other inputs = Cancel. Command: ";
         break;
     }
     default: {
@@ -60,7 +67,7 @@ void ConsoleView::PrintMediaCmdPrompt() {
 }
 
 void ConsoleView::PrintMediaData(MediaManager& manager, const int& index) {
-    manager.MediaList()[index]->Print();
+    manager.GetMedia(index)->Print();
 }
 
 #pragma region SHOW_MEDIA_PAGES
@@ -71,10 +78,10 @@ void ConsoleView::PrintMediaPage(const int& page, MediaManager& manager) {
 
     for (int i = 0; i < cnt; i++) {
         int index = startIndex + i;
-        if (manager.MediaList()[index]->Type() == MediaType::AUDIO)
-            printf("%d. AUDIO - %s\n", index, manager.MediaList()[index]->Name().c_str());
+        if (manager.GetMedia(index)->Type() == MediaType::AUDIO)
+            printf("%d. AUDIO - %s\n", index, manager.GetMedia(index)->Name().c_str());
         else 
-            printf("%d. VIDEO - %s\n", index, manager.MediaList()[index]->Name().c_str());
+            printf("%d. VIDEO - %s\n", index, manager.GetMedia(index)->Name().c_str());
     };
     printf("Viewing page %d of %d.\n", page, lastMediaPage);
 }
@@ -107,7 +114,7 @@ void ConsoleView::PrintAllPlaylists(MediaManager& manager) {
 void ConsoleView::CalculatePlaylistPages(MediaManager& manager, bool reset) {
     if (reset) curPlPage = 0;
     lastPlPage = manager.PlaylistCount() / entryPerPage;
-    if (manager.PlaylistCount() % entryPerPage > 0) lastPlPage++;
+    if (manager.PlaylistCount() % entryPerPage > 0 || manager.PlaylistCount() == 0) lastPlPage++;
 }
 
 void ConsoleView::PrintPlaylistByPage(MediaManager& manager, const int& page) {
@@ -135,20 +142,26 @@ void ConsoleView::PrintNextPlaylistPage(MediaManager& manager) {
     PrintPlaylistByPage(manager, curPlPage);
 }
 
-void ConsoleView::PrintPlaylistContentPage(Playlist& pl, const int& page, const int& lastPage) {
+#pragma endregion Print playlists to console
+
+#pragma region PLAYLIST CONTENT
+void ConsoleView::PrintPlaylistContentPage(Playlist& pl, const int& page) {
     int startIndex = page * entryPerPage;
     int cnt = entryPerPage;
     if (startIndex + cnt > pl.Count()) cnt = pl.Count() % entryPerPage;
 
     for (int i = 0; i < cnt; i++) {
         int index = startIndex + i;
-        if (pl.MediaList()[index]->Type() == MediaType::AUDIO)
-            printf("%d. AUDIO - %s\n", index, pl.MediaList()[index]->Name().c_str());
+        if (pl.GetMedia(index)->Type() == MediaType::AUDIO)
+            printf("%d. AUDIO - %s\n", index, pl.GetMedia(index)->Name().c_str());
         else
-            printf("%d. VIDEO - %s\n", index, pl.MediaList()[index]->Name().c_str());
+            printf("%d. VIDEO - %s\n", index, pl.GetMedia(index)->Name().c_str());
     };
-    printf("[PLAYLIST] Viewing page %d of %d for playlist %.\n", page, lastPage);
+    printf("[PLAYLIST] Viewing page %d of %d for playlist %s.\n", page, lastContentPage, pl.Name().c_str());
 }
 
-#pragma endregion Print playlists to console
-
+void ConsoleView::CalculatePlaylistContentPages(Playlist& pl) {
+    lastContentPage = pl.Count() / entryPerPage - 1;
+    if (pl.Count() % entryPerPage > 0 || pl.Count() == 0) lastContentPage++;
+}
+#pragma endregion Print playlist content

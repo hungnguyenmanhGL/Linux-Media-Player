@@ -13,10 +13,14 @@ public:
 	Playlist(const string& name);
 	~Playlist() {};
 
+	bool IsMediaInPlaylist(shared_ptr<MediaFile>& entry);
+
 	//getters
 	string Name() { return this->name; }
 	vector<shared_ptr<MediaFile>>& MediaList() { return this->mediaList; }
 	int Count() { return this->mediaList.size(); }
+
+	shared_ptr<MediaFile>& GetMedia(const int& index) { return mediaList[index]; }
 
 	//setter
 	void SetName(const string& name) { this->name = name;}

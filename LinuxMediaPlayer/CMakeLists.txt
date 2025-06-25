@@ -13,6 +13,7 @@ project ("LinuxMediaPlayer")
 
 find_package(ZLIB)
 find_package(TagLib 2.0.0 REQUIRED)
+find_package(SDL2 REQUIRED)
 
 # Add source to this project's executable.
 add_executable (LinuxMediaPlayer 
@@ -36,6 +37,8 @@ target_include_directories(LinuxMediaPlayer
 )
 
 target_link_libraries(LinuxMediaPlayer TagLib::tag)
+target_link_libraries(LinuxMediaPlayer SDL2::SDL2)
+
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET LinuxMediaPlayer PROPERTY CXX_STANDARD 20)

@@ -106,3 +106,11 @@ void MediaManager::RemoveMediaFromPlaylist(const int& plIndex, const int& mediaI
     playlists[plIndex].RemoveMedia(mediaIndex);
     printf("Removed %s from playlist %s.\n", mediaName.c_str(), playlists[plIndex].Name().c_str());
 }
+
+Playlist& MediaManager::GetPlaylist(const int& index) {
+    return this->playlists[index];
+}
+
+shared_ptr<MediaFile>& MediaManager::GetMedia(const int& index) {
+    return this->mediaList[index];
+}

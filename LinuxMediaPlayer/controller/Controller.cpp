@@ -17,7 +17,7 @@ void Controller::MainLoop() {
     bool quitSignal = false;
 
     do {
-        console.PrintMediaCmdPrompt();
+        console.PrintCmdPrompt();
         cin >> cmd;
         cin.ignore();
         cmd = toupper(cmd);
@@ -69,7 +69,7 @@ bool Controller::PlaylistLoop() {
 
     char cmd;
     do {
-        console.PrintMediaCmdPrompt();
+        console.PrintCmdPrompt();
         cin >> cmd;
         cin.ignore();
         cmd = toupper(cmd);
@@ -141,5 +141,136 @@ bool Controller::PlaylistLoop() {
 }
 
 void Controller::ContentLoop(const int& index) {
+    Playlist& curPl = manager.GetPlaylist(index);
+    console.SwitchState(ConsoleState::PLAYLIST_CONTENT);
+    console.CalculatePlaylistContentPages(curPl);
+    console.PrintPlaylistContentPage(curPl, 0);
 
+    int curPage = 0;
+    char cmd;
+    do {
+        console.PrintCmdPrompt();
+        cin >> cmd;
+        cin.ignore();
+        cmd = toupper(cmd);
+
+        switch (cmd) {
+        case 'A': {
+            AddMediaToPlaylistLoop(curPl);
+            console.Seperate();
+            //recalculate page number after addition
+            console.CalculatePlaylistContentPages(curPl);
+            console.PrintPlaylistContentPage(curPl, 0);
+            break;
+        }
+        case 'B': { //back to view media list
+            console.Seperate();
+            console.SwitchState(ConsoleState::MEDIA_LIST);
+            cout << "Returning to media list...\n";
+            return;
+        }
+        case 'D': {
+            console.Seperate();
+            int index = Helper::InputInt(0, curPl.Count() - 1);
+            curPl.At(index)->Print();
+            break;
+        }
+        //navigate playlist's content
+        case 'G': {
+            console.Seperate();
+            curPage = Helper::InputInt(0, console.LastContentPage());
+            console.PrintPlaylistContentPage(curPl, curPage);
+            break;
+        }
+        case 'N': {
+            console.Seperate();
+            curPage++;
+            if (curPage > console.LastContentPage()) curPage = 0;
+            console.PrintPlaylistContentPage(curPl, curPage);
+            break;
+        }
+        case 'P': {
+            console.Seperate();
+            curPage--;
+            if (curPage < 0) curPage = console.LastContentPage();
+            console.PrintPlaylistContentPage(curPl, curPage);
+            break;
+        }
+        //end of content navigation
+
+        case 'R': { //remove a media from playlist
+            console.Seperate();
+            console.PrintPlaylistContentPage(curPl, curPage);
+            cout << "Input -1 to cancel. ";
+            int index = Helper::InputInt(-1, curPl.Count() - 1);
+            if (index == -1) {
+                cout << "Cancel removal. Back to playlist content.\n";
+                break;
+            }
+            curPl.RemoveMedia(index);
+            console.CalculatePlaylistContentPages(curPl);
+            console.PrintPlaylistContentPage(curPl, 0);
+            break;
+        }
+        default: { //back to view media list
+            console.Seperate();
+            cout << "Invalid command. Try again.\n";
+            break;
+        }
+        }
+    } while (cmd != 'B');
+}
+
+void Controller::AddMediaToPlaylistLoop(Playlist& curPl) {
+    console.SwitchState(ConsoleState::ADD_MEDIA_PLAYLIST);
+    int curPage = 0;
+    console.PrintMediaPage(curPage, manager);
+
+    char cmd;
+    do {
+        console.PrintCmdPrompt();
+        cin >> cmd;
+        cin.ignore();
+        cmd = toupper(cmd);
+
+        switch (cmd) {
+        case 'A': {
+            int index = Helper::InputInt(0, manager.FileCount()-1);
+            shared_ptr<MediaFile>& entry = manager.GetMedia(index);
+            if (curPl.IsMediaInPlaylist(entry)) {
+                printf("Media %s is already in playlist %s.\n", 
+                    entry->Name().c_str(), curPl.Name().c_str());
+            }
+            else {
+                curPl.AddMedia(entry);
+            }
+            break;
+        }
+        case 'G': {
+            console.Seperate();
+            curPage = Helper::InputInt(0, console.LastMediaPage());
+            console.PrintMediaPage(curPage, manager);
+            break;
+        }
+        case 'N': {
+            console.Seperate();
+            curPage++;
+            if (curPage > console.LastMediaPage()) curPage = 0;
+            console.PrintMediaPage(curPage, manager);
+            break;
+        }
+        case 'P': {
+            console.Seperate();
+            curPage--;
+            if (curPage < 0) curPage = console.LastMediaPage();
+            console.PrintMediaPage(curPage, manager);
+            break;
+        }
+        default:
+            console.Seperate();
+            console.SwitchState(ConsoleState::PLAYLIST_CONTENT);
+            cout << "Cancel adding media. Back to view playlist content.\n";
+            return;
+        }
+    } while (cmd != 'B');
 }
