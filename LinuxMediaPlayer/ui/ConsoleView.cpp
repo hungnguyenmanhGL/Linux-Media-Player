@@ -32,6 +32,7 @@ void ConsoleView::PrintCmdPrompt() {
         cout << "Viewing list of media. Input command.\n"
             " [P]rev, [N]ext, [G]o to page\n"
             " Show media [D]etails\n"
+            " [F]Play"
             " [S]witch to playlist\n"
             " [Q]uit. Command: ";
         break;

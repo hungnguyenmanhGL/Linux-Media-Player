@@ -10,6 +10,25 @@ Controller::~Controller()
 {
 }
 
+void Controller::PlayMediaLoop(const int& index) {
+    atomic<shared_ptr<MediaFile>> curMedia(manager.GetMedia(index));
+    SDL_Window* window = SDL_CreateWindow("Bare Media Player", 0, 0, 800, 600, SDL_WINDOW_OPENGL);
+    SDL_Event event;
+    while (true) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                //cout << "Stop playing.\n";
+                SDL_DestroyWindow(window);
+                return;
+            }
+        }
+    }
+}
+
+void Controller::PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex) {
+    
+}
+
 void Controller::MainLoop() {
     console.SwitchState(ConsoleState::MEDIA_LIST);
     console.PrintCurrentMediaPage(manager);
@@ -27,6 +46,14 @@ void Controller::MainLoop() {
             cout << "Input entry index to show details. ";
             int index = Helper::InputInt(0, manager.FileCount() - 1);
             console.PrintMediaData(manager, index);
+            break;
+        }
+        case 'F': {
+            cout << "Input index to play media (-1 = cancel). ";
+            int index = Helper::InputInt(-1, manager.FileCount() - 1);
+            if (index == -1) break;
+            sdlThread = thread(&Controller::PlayMediaLoop,this, index);
+            sdlThread.detach();
             break;
         }
         case 'G': {

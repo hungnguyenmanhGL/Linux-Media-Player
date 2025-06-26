@@ -14,20 +14,30 @@ project ("LinuxMediaPlayer")
 find_package(ZLIB)
 find_package(TagLib 2.0.0 REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+    libavformat
+    libavcodec
+    libswresample
+    libswscale
+    libavutil
+)
+
 
 # Add source to this project's executable.
 add_executable (LinuxMediaPlayer 
     "LinuxMediaPlayer.cpp" 
     "LinuxMediaPlayer.h" 
       
-    "Helper.h"  
+    "Helper.h"  "Helper.cpp"
     "model/Playlist.h" "model/Playlist.cpp"
     "model/MediaFile.h" "model/MediaFile.cpp" 
     "model/AudioFile.h" "model/AudioFile.cpp" 
     "model/VideoFile.h" "model/VideoFile.cpp" 
     "model/MediaManager.h" "model/MediaManager.cpp"
     "ui/ConsoleView.h" "ui/ConsoleView.cpp"
-    "controller/Controller.h" "controller/Controller.cpp" "Helper.cpp")
+    "controller/Controller.h" "controller/Controller.cpp" 
+    "controller/SDLController.h")
 
 target_include_directories(LinuxMediaPlayer 
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -38,6 +48,7 @@ target_include_directories(LinuxMediaPlayer
 
 target_link_libraries(LinuxMediaPlayer TagLib::tag)
 target_link_libraries(LinuxMediaPlayer SDL2::SDL2)
+target_link_libraries(LinuxMediaPlayer PkgConfig::LIBAV)
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

@@ -1,8 +1,10 @@
 #pragma once
+#include <SDL2/SDL.h>
+#include <thread>
+#include <atomic>
 #include "MediaManager.h"
 #include "ConsoleView.h"
 #include "Helper.h"
-#include <SDL2/SDL.h>
 
 class Controller
 {
@@ -23,7 +25,16 @@ public:
 	//FROM: ContentLoop()
 	void AddMediaToPlaylistLoop(Playlist& pl);
 
+	//play media directly from media list view
+	void PlayMediaLoop(const int& index);
+
+	//play media index m from playlist index n
+	void PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex);
+
+	void OnPlayWindowClosed();
+
 private:
 	MediaManager manager;
 	ConsoleView console;
+	thread sdlThread;
 };
