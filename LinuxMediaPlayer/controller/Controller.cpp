@@ -5,28 +5,112 @@ Controller::Controller()
 	manager = MediaManager();
 	console = ConsoleView(manager);
 
-    std::cout << "FFmpeg Version: " << AV_STRINGIFY(LIBAVUTIL_VERSION_MAJOR) << "."
+    cout << "FFmpeg Version: " << AV_STRINGIFY(LIBAVUTIL_VERSION_MAJOR) << "."
         << AV_STRINGIFY(LIBAVUTIL_VERSION_MINOR) << "."
-        << AV_STRINGIFY(LIBAVUTIL_VERSION_MICRO) << std::endl;
+        << AV_STRINGIFY(LIBAVUTIL_VERSION_MICRO) << endl;
+    InitSDL();
 }
 
 Controller::~Controller()
 {
+    QuitSDL();
+}
+
+void Controller::InitSDL() {
+    SDL_Init(0);
+    TTF_Init();
+    int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
+    IMG_Init(imgFlags);
+}
+
+void Controller::QuitSDL() {
+    IMG_Quit();
+    TTF_Quit();
+    SDL_Quit();
+}
+
+SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer) {
+    SDL_Texture* newTexture = nullptr;
+
+    // Load image as SDL_Surface
+    SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+    if (loadedSurface == nullptr) {
+        cerr << "Unable to load image " << path << "! SDL_image Error: " << IMG_GetError() << endl;
+        return nullptr;
+    }
+
+    newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
+    if (newTexture == nullptr) {
+        cerr << "Unable to create texture from " << path << "! SDL Error: " << SDL_GetError() << endl;
+    }
+
+    SDL_FreeSurface(loadedSurface);
+    return newTexture;
 }
 
 void Controller::PlayMediaLoop(const int& index) {
     atomic<shared_ptr<MediaFile>> curMedia(manager.GetMedia(index));
-    SDL_Window* window = SDL_CreateWindow("Bare Media Player", 0, 0, 800, 600, SDL_WINDOW_OPENGL);
+    int winWidth = 800;
+    int winHeight = 600;
+
+    SDL_Window* window = SDL_CreateWindow("Bare Media Player", 0, 0, winWidth, winHeight, SDL_WINDOW_OPENGL);
     SDL_Event event;
-    while (true) {
+    //create renderer responsible for render graphic on screen
+    SDL_Renderer* render = SDL_CreateRenderer(window, 0, 0);
+
+    //prepare FC_text
+    string text = curMedia.load()->Name();
+    SDL_Color textColor = { 255, 255, 255, 255 };
+    FC_Font* font = FC_CreateFont();
+    FC_LoadFont(font, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 28, textColor, TTF_STYLE_NORMAL);
+
+    //prepare buttons - Play/Pause, Next, Previous
+    SDL_Texture* playTexture = LoadTexture("assets/play.png", render);
+    SDL_Texture* pauseTexture = LoadTexture("assets/pause.png", render);
+    SDL_Rect playPauseRect;
+    playPauseRect.w = 60; 
+    playPauseRect.h = 60;  
+    playPauseRect.x = (winWidth - playPauseRect.w) / 2;
+    playPauseRect.y = winHeight - playPauseRect.h - 30;
+
+    bool quit = false;
+    while (!quit && !quitFlag.load()) {
         while (SDL_PollEvent(&event)) {
+            //can't return because discrepancy in quitting in this thread vs other (player pressed q)
             if (event.type == SDL_QUIT) {
-                //cout << "Stop playing.\n";
-                SDL_DestroyWindow(window);
-                return;
+                quit = true;
             }
         }
+
+        if (quit || quitFlag.load()) {
+            break;
+        }
+        SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
+        SDL_RenderClear(render);
+
+        SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+        // Fill button rect with white because images are black
+        SDL_RenderFillRect(render, &playPauseRect);
+        SDL_Texture* playPauseTexture = playTexture;
+        if (!isPlaying) playPauseTexture = pauseTexture;
+        if (playPauseTexture != nullptr) {
+            SDL_RenderCopy(render, playPauseTexture, NULL, &playPauseRect);
+        }
+        else {
+            // Fallback: if texture failed to load, draw a colored rect as error
+            SDL_SetRenderDrawColor(render, 255, 0, 0, 255); //Red
+            SDL_RenderFillRect(render, &playPauseRect);
+        }
+
+        int textWidth = FC_GetWidth(font, "%s", text.c_str());
+        int textHeight = FC_GetHeight(font, "%s", text.c_str());
+        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 2, text.c_str());
+
+        SDL_RenderPresent(render);
     }
+
+    SDL_DestroyRenderer(render);
+    SDL_DestroyWindow(window);
 }
 
 void Controller::PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex) {
@@ -60,8 +144,14 @@ void Controller::MainLoop() {
             cout << "Input index to play media (-1 = cancel). ";
             int index = Helper::InputInt(-1, manager.FileCount() - 1);
             if (index == -1) break;
+
+            //if previous one running, end it to start new thread
+            if (sdlThread.joinable()) {
+                quitFlag.store(true); 
+                sdlThread.join();     
+                quitFlag.store(false);
+            }
             sdlThread = thread(&Controller::PlayMediaLoop,this, index);
-            sdlThread.detach();
             break;
         }
         case 'G': {
@@ -71,6 +161,10 @@ void Controller::MainLoop() {
         }
         case 'Q': {
             quitSignal = true;
+            quitFlag.store(true);
+            if (sdlThread.joinable()) { //wait for sdlThread to stop
+                sdlThread.join(); // This will block until PlayMediaLoop finishes execution
+            }
             cout << "Quitting...\n";
             break;
         }

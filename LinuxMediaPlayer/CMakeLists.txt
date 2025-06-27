@@ -18,6 +18,7 @@ find_package(TagLib 2.0.0 REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(SDL2_ttf REQUIRED)
+find_package(SDL2_image REQUIRED)
 
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavformat
@@ -26,6 +27,15 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libswscale
     libavutil
 )
+
+# fetch sdl_fontcache for better performance when rendering text
+include(FetchContent)
+FetchContent_Declare(
+    sdl_fontcache
+    GIT_REPOSITORY https://github.com/hungnguyenmanhGL/SDL_FontCache
+    GIT_TAG master    
+)
+FetchContent_MakeAvailable(sdl_fontcache)
 
 # Add source to this project's executable.
 add_executable (LinuxMediaPlayer 
@@ -40,7 +50,20 @@ add_executable (LinuxMediaPlayer
     "model/MediaManager.h" "model/MediaManager.cpp"
     "ui/ConsoleView.h" "ui/ConsoleView.cpp"
     "controller/Controller.h" "controller/Controller.cpp" 
-    "controller/SDLController.h")
+    "controller/SDLController.h" "controller/SDLController.cpp"
+)
+
+set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+set(ASSETS_BUILD_DIR "${CMAKE_BINARY_DIR}/assets")
+
+add_custom_command(
+    TARGET LinuxMediaPlayer  
+    PRE_BUILD              
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${ASSETS_SOURCE_DIR}" 
+            "${ASSETS_BUILD_DIR}"  
+    COMMENT "Copying assets directory to build directory..."
+)
 
 target_include_directories(LinuxMediaPlayer 
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -48,10 +71,16 @@ target_include_directories(LinuxMediaPlayer
     PUBLIC ui
     PUBLIC controller
     PUBLIC ${LIBAV_INCLUDE_DIRS}
+    $<BUILD_INTERFACE:${sdl_fontcache_SOURCE_DIR}>
 )
 
 target_link_libraries(LinuxMediaPlayer TagLib::tag)
-target_link_libraries(LinuxMediaPlayer SDL2::SDL2 SDL2_ttf::SDL2_ttf)
+target_link_libraries(LinuxMediaPlayer 
+    SDL2::SDL2 
+    SDL2_ttf::SDL2_ttf  
+    SDL2_image::SDL2_image
+    FontCache
+)
 target_link_libraries(LinuxMediaPlayer PkgConfig::LIBAV)
 
 

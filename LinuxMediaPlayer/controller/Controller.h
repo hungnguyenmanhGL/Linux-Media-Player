@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL_FontCache.h>
+#include <SDL_image.h>
 #include <thread>
 #include <atomic>
 #include "MediaManager.h"
@@ -46,4 +48,13 @@ private:
 	MediaManager manager;
 	ConsoleView console;
 	thread sdlThread;
+
+	bool isPlaying;
+	atomic_bool quitFlag;
+
+
+	SDL_Texture* LoadTexture(const std::string& path, SDL_Renderer* renderer);
+
+	void InitSDL();
+	void QuitSDL();
 };
