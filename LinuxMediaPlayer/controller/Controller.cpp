@@ -4,6 +4,10 @@ Controller::Controller()
 {
 	manager = MediaManager();
 	console = ConsoleView(manager);
+
+    std::cout << "FFmpeg Version: " << AV_STRINGIFY(LIBAVUTIL_VERSION_MAJOR) << "."
+        << AV_STRINGIFY(LIBAVUTIL_VERSION_MINOR) << "."
+        << AV_STRINGIFY(LIBAVUTIL_VERSION_MICRO) << std::endl;
 }
 
 Controller::~Controller()
@@ -49,6 +53,10 @@ void Controller::MainLoop() {
             break;
         }
         case 'F': {
+            if (manager.FileCount() == 0) {
+                cout << "No media to play.\n";
+                break;
+            }
             cout << "Input index to play media (-1 = cancel). ";
             int index = Helper::InputInt(-1, manager.FileCount() - 1);
             if (index == -1) break;
@@ -92,6 +100,7 @@ void Controller::MainLoop() {
 bool Controller::PlaylistLoop() {
     console.SwitchState(ConsoleState::PLAYLIST);
     console.CalculatePlaylistPages(manager, true);
+    console.Seperate();
     console.PrintPlaylistByPage(manager, 0);
 
     char cmd;
@@ -114,8 +123,9 @@ bool Controller::PlaylistLoop() {
             break;
         }
         case 'C': { //view content of playlist
-            int index = Helper::InputInt(0, manager.PlaylistCount() - 1);
-            console.Clear();
+            cout << "Input playlist index to view content (input -1 = cancel). ";
+            int index = Helper::InputInt(-1, manager.PlaylistCount() - 1);
+            if (index == -1) break;
             ContentLoop(index);
             break;
         }
@@ -171,6 +181,7 @@ void Controller::ContentLoop(const int& index) {
     Playlist& curPl = manager.GetPlaylist(index);
     console.SwitchState(ConsoleState::PLAYLIST_CONTENT);
     console.CalculatePlaylistContentPages(curPl);
+    console.Seperate();
     console.PrintPlaylistContentPage(curPl, 0);
 
     int curPage = 0;

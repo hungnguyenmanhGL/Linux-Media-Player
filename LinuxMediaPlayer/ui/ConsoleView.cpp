@@ -32,7 +32,7 @@ void ConsoleView::PrintCmdPrompt() {
         cout << "Viewing list of media. Input command.\n"
             " [P]rev, [N]ext, [G]o to page\n"
             " Show media [D]etails\n"
-            " [F]Play"
+            " [F]Play media\n"
             " [S]witch to playlist\n"
             " [Q]uit. Command: ";
         break;
@@ -114,7 +114,7 @@ void ConsoleView::PrintAllPlaylists(MediaManager& manager) {
 
 void ConsoleView::CalculatePlaylistPages(MediaManager& manager, bool reset) {
     if (reset) curPlPage = 0;
-    lastPlPage = manager.PlaylistCount() / entryPerPage;
+    lastPlPage = manager.PlaylistCount() / entryPerPage - 1;
     if (manager.PlaylistCount() % entryPerPage > 0 || manager.PlaylistCount() == 0) lastPlPage++;
 }
 

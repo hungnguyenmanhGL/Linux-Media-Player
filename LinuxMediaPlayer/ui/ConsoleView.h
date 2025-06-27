@@ -55,7 +55,7 @@ public:
 	void PrintPlaylistContentPage(Playlist& pl, const int& page);
 
 	//Add newspace to seperate console texts
-	void Seperate() { cout << " \n" << endl; }
+	void Seperate() { cout << " \n" << " \n"; }
 
 	//getters
 	int LastMediaPage() { return this->lastMediaPage; }

@@ -11,10 +11,14 @@ endif()
 
 project ("LinuxMediaPlayer")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(ZLIB)
 find_package(TagLib 2.0.0 REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(SDL2_ttf REQUIRED)
+
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavformat
     libavcodec
@@ -22,7 +26,6 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libswscale
     libavutil
 )
-
 
 # Add source to this project's executable.
 add_executable (LinuxMediaPlayer 
@@ -44,10 +47,11 @@ target_include_directories(LinuxMediaPlayer
     PUBLIC model
     PUBLIC ui
     PUBLIC controller
+    PUBLIC ${LIBAV_INCLUDE_DIRS}
 )
 
 target_link_libraries(LinuxMediaPlayer TagLib::tag)
-target_link_libraries(LinuxMediaPlayer SDL2::SDL2)
+target_link_libraries(LinuxMediaPlayer SDL2::SDL2 SDL2_ttf::SDL2_ttf)
 target_link_libraries(LinuxMediaPlayer PkgConfig::LIBAV)
 
 

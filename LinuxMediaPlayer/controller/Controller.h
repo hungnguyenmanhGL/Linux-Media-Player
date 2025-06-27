@@ -1,10 +1,19 @@
 #pragma once
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <thread>
 #include <atomic>
 #include "MediaManager.h"
 #include "ConsoleView.h"
 #include "Helper.h"
+ 
+extern "C" {
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
+#include <libavutil/avutil.h>
+}
 
 class Controller
 {
