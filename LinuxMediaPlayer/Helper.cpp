@@ -9,7 +9,7 @@ Helper::~Helper()
 }
 
 int Helper::InputInt(int minInclu, int maxInclu) {
-	int val = minInclu - 1;
+	int val = minInclu;
 	if (minInclu >= maxInclu) {
 		do {
 			printf("Input value (%d <= value): ", minInclu);

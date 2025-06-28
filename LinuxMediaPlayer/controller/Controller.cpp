@@ -17,16 +17,29 @@ Controller::~Controller()
 }
 
 void Controller::InitSDL() {
-    SDL_Init(SDL_INIT_AUDIO);
-    TTF_Init();
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        cerr << "[SDL_INIT] Fail to init SDL. Quit.\n";
+        return;
+    }
+    sdlInit = true;
+    if (TTF_Init() == -1) {
+        cerr << "[SDL_INIT] Fail to init SDL_TTF. Quit.\n";
+        return;
+    }
+    ttfInit = true;
     int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
-    IMG_Init(imgFlags);
+    int initIMGFlags = IMG_Init(imgFlags);
+    if (!(initIMGFlags & imgFlags)) {
+        cerr << "[SDL_INIT] Fail to init SDL_IMG. Quit.\n";
+        return;
+    }
+    imgInit = true;
 }
 
 void Controller::QuitSDL() {
-    IMG_Quit();
-    TTF_Quit();
-    SDL_Quit();
+    if (imgInit) IMG_Quit();
+    if (ttfInit) TTF_Quit();
+    if (sdlInit) SDL_Quit();
 }
 
 #pragma region PLAY AUDIO
@@ -52,34 +65,19 @@ void Controller::PlayAudio(const string& path) {
     // Queue audio data
     SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
     // Start playback
-    SDL_PauseAudioDevice(deviceId, 0);
 
     while (SDL_GetQueuedAudioSize(deviceId) > 0 && !quitFlag.load() && !windowCloseFlag.load()) {
+        if (isPlaying.load()) {
+            SDL_PauseAudioDevice(deviceId, 0);
+        }
+        else {
+            SDL_PauseAudioDevice(deviceId, 1);
+        }
         SDL_Delay(50);
     }
     SDL_CloseAudioDevice(deviceId);
 }
 #pragma endregion Process media files to play on SDL_audio
-
-
-SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer) {
-    SDL_Texture* newTexture = nullptr;
-
-    // Load image as SDL_Surface
-    SDL_Surface* loadedSurface = IMG_Load(path.c_str());
-    if (loadedSurface == nullptr) {
-        cerr << "Unable to load image " << path << "! SDL_image Error: " << IMG_GetError() << endl;
-        return nullptr;
-    }
-
-    newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
-    if (newTexture == nullptr) {
-        cerr << "Unable to create texture from " << path << "! SDL Error: " << SDL_GetError() << endl;
-    }
-
-    SDL_FreeSurface(loadedSurface);
-    return newTexture;
-}
 
 void Controller::PlayMediaLoop(const int& index) {
     atomic<shared_ptr<MediaFile>> curMedia(manager.GetMedia(index));
@@ -241,7 +239,7 @@ void Controller::MainLoop() {
             quitSignal = true;
             quitFlag.store(true);
             if (sdlThread.joinable()) { //wait for sdlThread to stop
-                sdlThread.join(); // This will block until PlayMediaLoop finishes execution
+                sdlThread.join(); //blocks until PlayMediaLoop finishes execution
             }
             cout << "Quitting...\n";
             break;
@@ -483,4 +481,23 @@ void Controller::AddMediaToPlaylistLoop(Playlist& curPl) {
             return;
         }
     } while (cmd != 'B');
+}
+
+SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer) {
+    SDL_Texture* newTexture = nullptr;
+
+    // Load image as SDL_Surface
+    SDL_Surface* loadedSurface = IMG_Load(path.c_str());
+    if (loadedSurface == nullptr) {
+        cerr << "Unable to load image " << path << "! SDL_image Error: " << IMG_GetError() << endl;
+        return nullptr;
+    }
+
+    newTexture = SDL_CreateTextureFromSurface(renderer, loadedSurface);
+    if (newTexture == nullptr) {
+        cerr << "Unable to create texture from " << path << "! SDL Error: " << SDL_GetError() << endl;
+    }
+
+    SDL_FreeSurface(loadedSurface);
+    return newTexture;
 }

@@ -37,8 +37,6 @@ public:
 	//play media index m from playlist index n
 	void PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex);
 
-	void OnPlayWindowClosed();
-
 private:
 	MediaManager manager;
 	ConsoleView console;
@@ -50,6 +48,10 @@ private:
 	atomic_bool isPlaying;
 	atomic_bool quitFlag;
 	atomic_bool windowCloseFlag;
+
+	bool sdlInit;
+	bool ttfInit;
+	bool imgInit;
 
 	int curPlaylistIndex;
 	int curMediaIndex;
