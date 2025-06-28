@@ -29,43 +29,35 @@ void Controller::QuitSDL() {
     SDL_Quit();
 }
 
-#pragma region FFMPEG AUDIO PROCESSING
+#pragma region PLAY AUDIO
 void Controller::PlayAudio(const string& path) {
-    AudioData audio_data;
-    processor.ProcessAudioFile(path, audio_data);
-
-    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-        cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << endl;
-        return;
-    }
+    AudioData audioData;
+    processor.ProcessAudioFile(path, audioData);
 
     SDL_AudioSpec ideal, have;
-
     //declare the ideal audio setup for playing (device audio may not match this)
     SDL_zero(ideal);
-    ideal.freq = audio_data.sample_rate;
-    ideal.format = audio_data.format;
-    ideal.channels = audio_data.channels;
+    ideal.freq = audioData.sample_rate;
+    ideal.format = audioData.format;
+    ideal.channels = audioData.channels;
     ideal.samples = 4096;
     ideal.callback = nullptr;
 
-    SDL_AudioDeviceID device_id = SDL_OpenAudioDevice(nullptr, 0, &ideal, &have, 0);
-    if (device_id == 0) {
+    SDL_AudioDeviceID deviceId = SDL_OpenAudioDevice(nullptr, 0, &ideal, &have, 0);
+    if (deviceId == 0) {
         cerr << "Failed to open audio device: " << SDL_GetError() << endl;
-        SDL_Quit();
         return;
     }
 
     // Queue audio data
-    SDL_QueueAudio(device_id, audio_data.buffer.data(), audio_data.buffer.size());
-
+    SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
     // Start playback
-    SDL_PauseAudioDevice(device_id, 0);
+    SDL_PauseAudioDevice(deviceId, 0);
 
-    // Wait for playback to finish
-    SDL_Delay((audio_data.length_samples * 1000) / audio_data.sample_rate);
-
-    SDL_CloseAudioDevice(device_id);
+    while (SDL_GetQueuedAudioSize(deviceId) > 0 && !quitFlag.load() && !windowCloseFlag.load()) {
+        SDL_Delay(50);
+    }
+    SDL_CloseAudioDevice(deviceId);
 }
 #pragma endregion Process media files to play on SDL_audio
 
@@ -126,14 +118,15 @@ void Controller::PlayMediaLoop(const int& index) {
     nextRect.x = playPauseRect.x + btnWidth * 2;
     nextRect.y = playPauseRect.y;
 
-    isPlaying = true;
-    PlayAudio(curMedia.load()->Path());
+    isPlaying.store(true);
+    audioThread = thread(&Controller::PlayAudio, this, curMedia.load()->Path());
 
-    bool quit = false;
-    while (!quit && !quitFlag.load()) {
+    windowCloseFlag.store(false);
+    while (!windowCloseFlag.load() && !quitFlag.load()) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
-                quit = true;
+                //cout << "Quit\n";
+                windowCloseFlag.store(true);
             }
             if (event.type == SDL_MOUSEBUTTONDOWN) {
                 //cout << "Clicking.\n";
@@ -145,8 +138,11 @@ void Controller::PlayMediaLoop(const int& index) {
             }
         }
 
-        if (quit || quitFlag.load()) {
-            isPlaying = false;
+        if (windowCloseFlag.load() || quitFlag.load()) {
+            isPlaying.store(false);
+            if (audioThread.joinable()) {
+                audioThread.join();
+            }
             break;
         }
         SDL_SetRenderDrawColor(render, 0, 0, 0, 255);

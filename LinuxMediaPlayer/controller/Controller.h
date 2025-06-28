@@ -43,10 +43,16 @@ private:
 	MediaManager manager;
 	ConsoleView console;
 	AudioProcessor processor;
-	thread sdlThread;
 
-	bool isPlaying;
+	thread sdlThread;
+	thread audioThread;
+
+	atomic_bool isPlaying;
 	atomic_bool quitFlag;
+	atomic_bool windowCloseFlag;
+
+	int curPlaylistIndex;
+	int curMediaIndex;
 
 	int btnWidth = 60;
 	int btnHeight = 60;

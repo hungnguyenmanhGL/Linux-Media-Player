@@ -3,24 +3,32 @@
 void AudioProcessor::Cleanup() {
     if (swr_ctx) {
         swr_free(&swr_ctx);
+        swr_ctx = nullptr;
     }
     if (codec_ctx) {
         avcodec_free_context(&codec_ctx);
+        codec_ctx = nullptr; 
     }
     if (format_ctx) {
         avformat_close_input(&format_ctx);
+        format_ctx = nullptr; 
     }
+    audio_stream_index = -1;
 }
 
 bool AudioProcessor::ProcessAudioFile(const string& path, AudioData& audio_data) {
+    Cleanup();
+
     if (avformat_open_input(&format_ctx, path.c_str(), nullptr, nullptr) < 0) {
-        cerr << "Error: Could not open file " << path << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not open file " << path << endl;
+        Cleanup();
         return false;
     }
 
     // Retrieve stream information
     if (avformat_find_stream_info(format_ctx, nullptr) < 0) {
-        cerr << "Error: Could not find stream information" << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not find stream information" << endl;
+        Cleanup();
         return false;
     }
 
@@ -34,7 +42,8 @@ bool AudioProcessor::ProcessAudioFile(const string& path, AudioData& audio_data)
     }
 
     if (audio_stream_index == -1) {
-        cerr << "Error: No audio stream found" << endl;
+        cerr << "[AUDIO_PROCESSOR] No audio stream found" << endl;
+        Cleanup();
         return false;
     }
 
@@ -44,26 +53,30 @@ bool AudioProcessor::ProcessAudioFile(const string& path, AudioData& audio_data)
     // Find decoder
     const AVCodec* codec = avcodec_find_decoder(codec_params->codec_id);
     if (!codec) {
-        cerr << "Error: Unsupported codec" << endl;
+        cerr << "[AUDIO_PROCESSOR] Unsupported codec" << endl;
+        Cleanup();
         return false;
     }
 
     // Allocate codec context
     codec_ctx = avcodec_alloc_context3(codec);
     if (!codec_ctx) {
-        cerr << "Error: Could not allocate codec context" << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not allocate codec context" << endl;
+        Cleanup();
         return false;
     }
 
     // Copy codec parameters to context
     if (avcodec_parameters_to_context(codec_ctx, codec_params) < 0) {
-        cerr << "Error: Could not copy codec parameters" << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not copy codec parameters" << endl;
+        Cleanup();
         return false;
     }
 
     // Open codec
     if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
-        cerr << "Error: Could not open codec" << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not open codec" << endl;
+        Cleanup();
         return false;
     }
 
@@ -75,11 +88,11 @@ bool AudioProcessor::ProcessAudioFile(const string& path, AudioData& audio_data)
     // Setup resampler
     swr_ctx = swr_alloc();
     if (!swr_ctx) {
-        cerr << "Error: Could not allocate resampler" << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not allocate resampler" << endl;
+        Cleanup();
         return false;
     }
 
-    // Get input channel layout using new API
     AVChannelLayout in_ch_layout;
     if (codec_ctx->ch_layout.nb_channels > 0) {
         av_channel_layout_copy(&in_ch_layout, &codec_ctx->ch_layout);
@@ -98,8 +111,9 @@ bool AudioProcessor::ProcessAudioFile(const string& path, AudioData& audio_data)
     av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
 
     if (swr_init(swr_ctx) < 0) {
-        cerr << "Error: Could not initialize resampler" << endl;
+        cerr << "[AUDIO_PROCESSOR] Could not initialize resampler" << endl;
         av_channel_layout_uninit(&in_ch_layout);
+        Cleanup();
         return false;
     }
 
@@ -107,9 +121,11 @@ bool AudioProcessor::ProcessAudioFile(const string& path, AudioData& audio_data)
 
     // Decode and convert audio
     if (!DecodeAudio(audio_data)) {
+        Cleanup();
         return false;
     }
 
+    Cleanup();
     return true;
 }
 
