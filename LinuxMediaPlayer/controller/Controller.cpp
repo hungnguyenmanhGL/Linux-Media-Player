@@ -18,7 +18,7 @@ Controller::~Controller()
 
 void Controller::InitSDL() {
     if (SDL_Init(SDL_INIT_AUDIO) < 0) {
-        cerr << "[SDL_INIT] Fail to init SDL. Quit.\n";
+        cerr << "[SDL_INIT] Fail to init SDL_TTF. Error: " << TTF_GetError() << ".\n";
         return;
     }
     sdlInit = true;
@@ -66,57 +66,133 @@ void Controller::PlayAudio(const string& path) {
     SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
     // Start playback
 
-    while (SDL_GetQueuedAudioSize(deviceId) > 0 && !quitFlag.load() && !windowCloseFlag.load()) {
+    while (!quitFlag.load() && !windowCloseFlag.load()) {
         if (isPlaying.load()) {
             SDL_PauseAudioDevice(deviceId, 0);
         }
         else {
             SDL_PauseAudioDevice(deviceId, 1);
         }
-        SDL_Delay(50);
+
+        /*if (changeMediaFlag.load()) {
+            string changePath;
+            if (curPlaylistIndex == MEDIA_PLAYLIST_INDEX)
+                changePath = manager.GetMedia(curMediaIndex)->Path();
+            else
+                changePath = manager.GetPlaylist(curPlaylistIndex).At(curMediaIndex)->Path();
+            processor.ProcessAudioFile(changePath, audioData);
+            SDL_ClearQueuedAudio(deviceId);
+            SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
+            changeMediaFlag.store(false);
+        }*/
+
+        if (prevFlag.load()) {
+            string prevPath = GetPreviousMediaPath();
+            processor.ProcessAudioFile(prevPath, audioData);
+            SDL_ClearQueuedAudio(deviceId);
+            SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
+            prevFlag.store(false);
+        }
+        if (nextFlag.load()) {
+            string nextPath = GetNextMediaPath();
+            processor.ProcessAudioFile(nextPath, audioData);
+            SDL_ClearQueuedAudio(deviceId);
+            SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
+            nextFlag.store(false);
+        }
+        
+        if (SDL_GetQueuedAudioSize(deviceId) == 0) {
+            string nextPath = GetNextMediaPath();
+            processor.ProcessAudioFile(nextPath, audioData);
+            SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
+        }
+        SDL_Delay(50); //delay 50ms before next call to improve performance
     }
     SDL_CloseAudioDevice(deviceId);
+}
+
+string Controller::GetNextMediaPath() {
+    int nextIndex = curMediaIndex + 1;
+    //if playing directly from media list -> no playlist
+    if (curPlaylistIndex == MEDIA_PLAYLIST_INDEX) {
+        if (nextIndex >= manager.FileCount()) nextIndex = 0;
+        SetCurrentPlayingIndex(curPlaylistIndex, nextIndex);
+        return manager.GetMedia(nextIndex)->Path();
+    }
+    //if playing from a playlist
+    else {
+        if (nextIndex >= manager.GetPlaylist(curPlaylistIndex).Count()) nextIndex = 0;
+        SetCurrentPlayingIndex(curPlaylistIndex, nextIndex);
+        return manager.GetPlaylist(curPlaylistIndex).GetMedia(nextIndex)->Path();
+    }
+}
+
+string Controller::GetPreviousMediaPath() {
+    int nextIndex = curMediaIndex - 1;
+    //if playing directly from media list -> no playlist
+    if (curPlaylistIndex == MEDIA_PLAYLIST_INDEX) {
+        if (nextIndex < 0) nextIndex = manager.FileCount() - 1;
+        SetCurrentPlayingIndex(curPlaylistIndex, nextIndex);
+        return manager.GetMedia(nextIndex)->Path();
+    }
+    //if playing from a playlist
+    else {
+        if (nextIndex < 0) nextIndex = manager.GetPlaylist(curPlaylistIndex).Count() - 1;
+        SetCurrentPlayingIndex(curPlaylistIndex, nextIndex);
+        return manager.GetPlaylist(curPlaylistIndex).GetMedia(nextIndex)->Path();
+    }
+}
+
+void Controller::SetCurrentPlayingIndex(const int& plIndex, const int& mediaIndex) {
+    curPlaylistIndex.store(plIndex);
+    curMediaIndex.store(mediaIndex);
+    if (plIndex == MEDIA_PLAYLIST_INDEX) {
+        playingMediaName = manager.GetMedia(curMediaIndex)->Name();
+        curPlaylistName = "";
+    }
+    else {
+        playingMediaName = manager.GetPlaylist(curPlaylistIndex).GetMedia(curMediaIndex)->Name();
+        curPlaylistName = manager.GetPlaylist(curPlaylistIndex).Name();
+    }
 }
 #pragma endregion Process media files to play on SDL_audio
 
 void Controller::PlayMediaLoop(const int& index) {
-    atomic<shared_ptr<MediaFile>> curMedia(manager.GetMedia(index));
+    atomic<shared_ptr<MediaFile>> curMedia;
+    if (curPlaylistIndex == MEDIA_PLAYLIST_INDEX)
+        curMedia.store(manager.GetMedia(index));
+    else
+        curMedia.store(manager.GetPlaylist(curPlaylistIndex).At(index));
+
     int winWidth = 800;
     int winHeight = 600;
-
     SDL_Window* window = SDL_CreateWindow("Bare Media Player", 0, 0, winWidth, winHeight, SDL_WINDOW_OPENGL);
     SDL_Event event;
     //create renderer responsible for render graphic on screen
     SDL_Renderer* render = SDL_CreateRenderer(window, 0, 0);
 
     //prepare FC_text
-    string text = curMedia.load()->Name();
     SDL_Color textColor = { 255, 255, 255, 255 };
     FC_Font* font = FC_CreateFont();
     FC_LoadFont(font, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 28, textColor, TTF_STYLE_NORMAL);
 
     //prepare buttons - Play/Pause, Next, Previous
-    SDL_Texture* playTexture = LoadTexture("assets/play.png", render);
-    SDL_Texture* pauseTexture = LoadTexture("assets/pause.png", render);
-    SDL_Rect playPauseRect;
-    playPauseRect.w = btnWidth; 
-    playPauseRect.h = btnHeight;  
-    playPauseRect.x = (winWidth - playPauseRect.w) / 2;
-    playPauseRect.y = winHeight - playPauseRect.h * 2 ;
+    SDL_Texture* playTexture = nullptr;
+    SDL_Texture* pauseTexture = nullptr;
+    SDL_Texture* prevTexture = nullptr;
+    SDL_Texture* nextTexture = nullptr;
+    SetupButtonTexture(render, playTexture, pauseTexture, prevTexture, nextTexture);
 
-    SDL_Texture* prevTexture = LoadTexture("assets/prev.png", render);
-    SDL_Texture* nextTexture = LoadTexture("assets/next.png", render);
+    SDL_Rect playPauseRect;
     SDL_Rect prevRect, nextRect;
-    prevRect.w = btnWidth;
-    prevRect.h = btnHeight;
-    nextRect.w = btnWidth;
-    nextRect.h = btnHeight;
-    prevRect.x = playPauseRect.x - btnWidth * 2;
-    prevRect.y = playPauseRect.y;
-    nextRect.x = playPauseRect.x + btnWidth * 2;
-    nextRect.y = playPauseRect.y;
+    SetupButtonRect(winWidth, winHeight, playPauseRect, prevRect, nextRect);
 
     isPlaying.store(true);
+    if (audioThread.joinable()) {
+        quitFlag.store(true);
+        audioThread.join();
+        quitFlag.store(false);
+    }
     audioThread = thread(&Controller::PlayAudio, this, curMedia.load()->Path());
 
     windowCloseFlag.store(false);
@@ -132,6 +208,12 @@ void Controller::PlayMediaLoop(const int& index) {
                 //cout << mousePoint.x << " " << mousePoint.y << endl;
                 if (SDL_PointInRect(&mousePoint, &playPauseRect)) {
                     isPlaying = !isPlaying;
+                }
+                if (SDL_PointInRect(&mousePoint, &prevRect)) {
+                    prevFlag.store(true);
+                }
+                if (SDL_PointInRect(&mousePoint, &nextRect)) {
+                    nextFlag.store(true);
                 }
             }
         }
@@ -178,19 +260,18 @@ void Controller::PlayMediaLoop(const int& index) {
             SDL_RenderFillRect(render, &nextRect);
         }
 
-        int textWidth = FC_GetWidth(font, "%s", text.c_str());
-        int textHeight = FC_GetHeight(font, "%s", text.c_str());
-        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4, text.c_str());
+        int textWidth = FC_GetWidth(font, "%s", playingMediaName.c_str());
+        int textHeight = FC_GetHeight(font, "%s", playingMediaName.c_str());
+        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4, playingMediaName.c_str());
+        //adjust to put playlist name under media name
+        textWidth = FC_GetWidth(font, "%s", curPlaylistName.c_str());
+        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4 + 20, curPlaylistName.c_str());
 
         SDL_RenderPresent(render);
     }
 
     SDL_DestroyRenderer(render);
     SDL_DestroyWindow(window);
-}
-
-void Controller::PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex) {
-    
 }
 
 void Controller::MainLoop() {
@@ -221,6 +302,7 @@ void Controller::MainLoop() {
             int index = Helper::InputInt(-1, manager.FileCount() - 1);
             if (index == -1) break;
 
+            SetCurrentPlayingIndex(MEDIA_PLAYLIST_INDEX, index);
             //if previous one running, end it to start new thread
             if (sdlThread.joinable()) {
                 quitFlag.store(true); 
@@ -237,11 +319,6 @@ void Controller::MainLoop() {
         }
         case 'Q': {
             quitSignal = true;
-            quitFlag.store(true);
-            if (sdlThread.joinable()) { //wait for sdlThread to stop
-                sdlThread.join(); //blocks until PlayMediaLoop finishes execution
-            }
-            cout << "Quitting...\n";
             break;
         }
         case 'P': {
@@ -263,7 +340,14 @@ void Controller::MainLoop() {
             break;
         }
 
-        if (quitSignal) return;
+        if (quitSignal) {
+            quitFlag.store(true);
+            if (sdlThread.joinable()) { //wait for sdlThread to stop
+                sdlThread.join(); //blocks until PlayMediaLoop finishes execution
+            }
+            cout << "Quitting...\n";
+            return;
+        }
     } while (cmd != 'Q');
 }
 
@@ -331,7 +415,7 @@ bool Controller::PlaylistLoop() {
             console.PrintPrevPlaylistPage(manager);
             break;
         }
-        case 'Q': { //quit
+        case 'Q': { //quit -> back to media loop for quit logic
             return true;
         }
         case 'S': { //switch back to media view
@@ -347,8 +431,8 @@ bool Controller::PlaylistLoop() {
     return false;
 }
 
-void Controller::ContentLoop(const int& index) {
-    Playlist& curPl = manager.GetPlaylist(index);
+void Controller::ContentLoop(const int& playlistIndex) {
+    Playlist& curPl = manager.GetPlaylist(playlistIndex);
     console.SwitchState(ConsoleState::PLAYLIST_CONTENT);
     console.CalculatePlaylistContentPages(curPl);
     console.Seperate();
@@ -373,14 +457,33 @@ void Controller::ContentLoop(const int& index) {
         }
         case 'B': { //back to view media list
             console.Seperate();
-            console.SwitchState(ConsoleState::MEDIA_LIST);
-            cout << "Returning to media list...\n";
+            console.SwitchState(ConsoleState::PLAYLIST);
+            cout << "Returning to playlist's list...\n";
             return;
         }
         case 'D': {
             console.Seperate();
             int index = Helper::InputInt(0, curPl.Count() - 1);
             curPl.At(index)->Print();
+            break;
+        }
+        case 'F': {
+            if (curPl.Count() == 0) {
+                cout << "No media in the playlist.\n";
+                break;
+            }
+            cout << "Input index to play media (-1 = cancel). ";
+            int mediaIndex = Helper::InputInt(-1, curPl.Count() - 1);
+            if (mediaIndex == -1) break;
+
+            SetCurrentPlayingIndex(playlistIndex, mediaIndex);
+            //if previous one running, end it to start new thread
+            if (sdlThread.joinable()) {
+                quitFlag.store(true);
+                sdlThread.join();
+                quitFlag.store(false);
+            }
+            sdlThread = thread(&Controller::PlayMediaLoop, this, mediaIndex);
             break;
         }
         //navigate playlist's content
@@ -500,4 +603,28 @@ SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer)
 
     SDL_FreeSurface(loadedSurface);
     return newTexture;
+}
+
+void Controller::SetupButtonTexture(SDL_Renderer*& render, 
+    SDL_Texture*& playTexture, SDL_Texture*& pauseTexture, SDL_Texture*& prevTexture, SDL_Texture*& nextTexture) {
+    playTexture = LoadTexture("assets/play.png", render);
+    pauseTexture = LoadTexture("assets/pause.png", render);
+    prevTexture = LoadTexture("assets/prev.png", render);
+    nextTexture = LoadTexture("assets/next.png", render);
+}
+
+void Controller::SetupButtonRect(const int& winWidth, const int& winHeight, SDL_Rect& playPauseRect, SDL_Rect& prevRect, SDL_Rect& nextRect) {
+    playPauseRect.w = btnWidth;
+    playPauseRect.h = btnHeight;
+    playPauseRect.x = (winWidth - playPauseRect.w) / 2;
+    playPauseRect.y = winHeight - playPauseRect.h * 2;
+
+    prevRect.w = btnWidth;
+    prevRect.h = btnHeight;
+    nextRect.w = btnWidth;
+    nextRect.h = btnHeight;
+    prevRect.x = playPauseRect.x - btnWidth * 2;
+    prevRect.y = playPauseRect.y;
+    nextRect.x = playPauseRect.x + btnWidth * 2;
+    nextRect.y = playPauseRect.y;
 }

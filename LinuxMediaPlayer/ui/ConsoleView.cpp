@@ -28,7 +28,7 @@ void ConsoleView::PrintMediaList(MediaManager& manager) {
 
 void ConsoleView::PrintCmdPrompt() {
     switch (state) {
-    case ConsoleState::MEDIA_LIST: {
+    case ConsoleState::MEDIA_LIST: { ////can call play media from here
         cout << "Viewing list of media. Input command.\n"
             " [P]rev, [N]ext, [G]o to page\n"
             " Show media [D]etails\n"
@@ -46,10 +46,11 @@ void ConsoleView::PrintCmdPrompt() {
             " [Q]uit. Command: ";
         break;
     }
-    case ConsoleState::PLAYLIST_CONTENT: {
+    case ConsoleState::PLAYLIST_CONTENT: { //can call play media from here
         cout << "Viewing playlist's content. Input command.\n"
             " [P]rev media page, [N]ext media page, [G]o to page\n"
             " [A]dd media, [R]emove media, Show media [D]etails\n"
+            " [F]Play media\n"
             " [B]ack. Command: ";
         break;
     }

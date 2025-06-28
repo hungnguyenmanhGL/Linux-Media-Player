@@ -38,6 +38,8 @@ public:
 	void PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex);
 
 private:
+	const int MEDIA_PLAYLIST_INDEX = -1;
+
 	MediaManager manager;
 	ConsoleView console;
 	AudioProcessor processor;
@@ -48,22 +50,34 @@ private:
 	atomic_bool isPlaying;
 	atomic_bool quitFlag;
 	atomic_bool windowCloseFlag;
+	atomic_bool prevFlag;
+	atomic_bool nextFlag;
+	atomic_bool changeMediaFlag;
 
 	bool sdlInit;
 	bool ttfInit;
 	bool imgInit;
 
-	int curPlaylistIndex;
-	int curMediaIndex;
+	//string used to render on SDL Window of current playing media's name
+	string playingMediaName;
+	string curPlaylistName;
+
+	atomic<int> curPlaylistIndex;
+	atomic<int> curMediaIndex;
 
 	int btnWidth = 60;
 	int btnHeight = 60;
 
 	SDL_Texture* LoadTexture(const std::string& path, SDL_Renderer* renderer);
+	void SetupButtonTexture(SDL_Renderer*& render,
+		SDL_Texture*& playTexture, SDL_Texture*& pauseTexture, SDL_Texture*& prevTexture, SDL_Texture*& nextTexture);
+	void SetupButtonRect(const int& winWidth, const int& winHeight, SDL_Rect& playPauseRect, SDL_Rect& prevRect, SDL_Rect& nextRect);
 
 	void InitSDL();
 	void QuitSDL();
 
 	void PlayAudio(const string& path);
-	void StopAudio();
+	string GetNextMediaPath();
+	string GetPreviousMediaPath();
+	void SetCurrentPlayingIndex(const int& plIndex, const int& mediaIndex);
 };

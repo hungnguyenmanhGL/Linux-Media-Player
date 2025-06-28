@@ -57,6 +57,9 @@ add_executable (LinuxMediaPlayer
 set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(ASSETS_BUILD_DIR "${CMAKE_BINARY_DIR}/assets")
 
+#set(BUILD_SHARED_LIBS OFF)
+#set(CMAKE_EXE_LINKER_FLAGS "-static")
+
 add_custom_command(
     TARGET LinuxMediaPlayer  
     PRE_BUILD              
@@ -77,9 +80,9 @@ target_include_directories(LinuxMediaPlayer
 
 target_link_libraries(LinuxMediaPlayer TagLib::tag)
 target_link_libraries(LinuxMediaPlayer 
-    SDL2::SDL2 
-    SDL2_ttf::SDL2_ttf  
-    SDL2_image::SDL2_image
+    SDL2::SDL2-static
+    SDL2_ttf::SDL2_ttf-static  
+    SDL2_image::SDL2_image-static
     FontCache
 )
 target_link_libraries(LinuxMediaPlayer PkgConfig::LIBAV)
