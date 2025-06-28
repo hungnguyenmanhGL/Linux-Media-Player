@@ -2,6 +2,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL_FontCache.h>
+#include <SDL2/SDL_audio.h>
+#include <SDL2/SDL_rect.h>
 #include <SDL_image.h>
 #include <thread>
 #include <atomic>
@@ -15,6 +17,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avutil.h>
+#include <libavutil/channel_layout.h>
 }
 
 class Controller
@@ -52,9 +55,14 @@ private:
 	bool isPlaying;
 	atomic_bool quitFlag;
 
+	int btnWidth = 60;
+	int btnHeight = 60;
 
 	SDL_Texture* LoadTexture(const std::string& path, SDL_Renderer* renderer);
 
 	void InitSDL();
 	void QuitSDL();
+
+	void PlayAudio(const string& path);
+	void StopAudio();
 };

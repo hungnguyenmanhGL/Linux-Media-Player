@@ -17,7 +17,7 @@ Controller::~Controller()
 }
 
 void Controller::InitSDL() {
-    SDL_Init(0);
+    SDL_Init(SDL_INIT_AUDIO);
     TTF_Init();
     int imgFlags = IMG_INIT_PNG | IMG_INIT_JPG;
     IMG_Init(imgFlags);
@@ -28,6 +28,13 @@ void Controller::QuitSDL() {
     TTF_Quit();
     SDL_Quit();
 }
+
+#pragma region FFMPEG AUDIO PROCESSING
+void Controller::PlayAudio(const string& path) {
+    
+}
+#pragma endregion Process media files to play on SDL_audio
+
 
 SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer) {
     SDL_Texture* newTexture = nullptr;
@@ -68,21 +75,42 @@ void Controller::PlayMediaLoop(const int& index) {
     SDL_Texture* playTexture = LoadTexture("assets/play.png", render);
     SDL_Texture* pauseTexture = LoadTexture("assets/pause.png", render);
     SDL_Rect playPauseRect;
-    playPauseRect.w = 60; 
-    playPauseRect.h = 60;  
+    playPauseRect.w = btnWidth; 
+    playPauseRect.h = btnHeight;  
     playPauseRect.x = (winWidth - playPauseRect.w) / 2;
-    playPauseRect.y = winHeight - playPauseRect.h - 30;
+    playPauseRect.y = winHeight - playPauseRect.h * 2 ;
 
+    SDL_Texture* prevTexture = LoadTexture("assets/prev.png", render);
+    SDL_Texture* nextTexture = LoadTexture("assets/next.png", render);
+    SDL_Rect prevRect, nextRect;
+    prevRect.w = btnWidth;
+    prevRect.h = btnHeight;
+    nextRect.w = btnWidth;
+    nextRect.h = btnHeight;
+    prevRect.x = playPauseRect.x - btnWidth * 2;
+    prevRect.y = playPauseRect.y;
+    nextRect.x = playPauseRect.x + btnWidth * 2;
+    nextRect.y = playPauseRect.y;
+
+    isPlaying = true;
     bool quit = false;
     while (!quit && !quitFlag.load()) {
         while (SDL_PollEvent(&event)) {
-            //can't return because discrepancy in quitting in this thread vs other (player pressed q)
             if (event.type == SDL_QUIT) {
                 quit = true;
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN) {
+                //cout << "Clicking.\n";
+                SDL_Point mousePoint = { event.button.x, event.button.y };
+                //cout << mousePoint.x << " " << mousePoint.y << endl;
+                if (SDL_PointInRect(&mousePoint, &playPauseRect)) {
+                    isPlaying = !isPlaying;
+                }
             }
         }
 
         if (quit || quitFlag.load()) {
+            isPlaying = false;
             break;
         }
         SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
@@ -92,7 +120,7 @@ void Controller::PlayMediaLoop(const int& index) {
         // Fill button rect with white because images are black
         SDL_RenderFillRect(render, &playPauseRect);
         SDL_Texture* playPauseTexture = playTexture;
-        if (!isPlaying) playPauseTexture = pauseTexture;
+        if (isPlaying) playPauseTexture = pauseTexture;
         if (playPauseTexture != nullptr) {
             SDL_RenderCopy(render, playPauseTexture, NULL, &playPauseRect);
         }
@@ -102,9 +130,27 @@ void Controller::PlayMediaLoop(const int& index) {
             SDL_RenderFillRect(render, &playPauseRect);
         }
 
+        //render prev + next buttons
+        SDL_RenderFillRect(render, &prevRect);
+        if (prevTexture != nullptr) {
+            SDL_RenderCopy(render, prevTexture, NULL, &prevRect);
+        }
+        else {
+            SDL_SetRenderDrawColor(render, 255, 0, 0, 255); 
+            SDL_RenderFillRect(render, &prevRect);
+        }
+        SDL_RenderFillRect(render, &nextRect);
+        if (nextTexture != nullptr) {
+            SDL_RenderCopy(render, nextTexture, NULL, &nextRect);
+        }
+        else {
+            SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
+            SDL_RenderFillRect(render, &nextRect);
+        }
+
         int textWidth = FC_GetWidth(font, "%s", text.c_str());
         int textHeight = FC_GetHeight(font, "%s", text.c_str());
-        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 2, text.c_str());
+        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4, text.c_str());
 
         SDL_RenderPresent(render);
     }
