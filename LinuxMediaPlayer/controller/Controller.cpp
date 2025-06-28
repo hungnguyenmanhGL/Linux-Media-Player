@@ -31,7 +31,41 @@ void Controller::QuitSDL() {
 
 #pragma region FFMPEG AUDIO PROCESSING
 void Controller::PlayAudio(const string& path) {
-    
+    AudioData audio_data;
+    processor.ProcessAudioFile(path, audio_data);
+
+    if (SDL_Init(SDL_INIT_AUDIO) < 0) {
+        cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << endl;
+        return;
+    }
+
+    SDL_AudioSpec ideal, have;
+
+    //declare the ideal audio setup for playing (device audio may not match this)
+    SDL_zero(ideal);
+    ideal.freq = audio_data.sample_rate;
+    ideal.format = audio_data.format;
+    ideal.channels = audio_data.channels;
+    ideal.samples = 4096;
+    ideal.callback = nullptr;
+
+    SDL_AudioDeviceID device_id = SDL_OpenAudioDevice(nullptr, 0, &ideal, &have, 0);
+    if (device_id == 0) {
+        cerr << "Failed to open audio device: " << SDL_GetError() << endl;
+        SDL_Quit();
+        return;
+    }
+
+    // Queue audio data
+    SDL_QueueAudio(device_id, audio_data.buffer.data(), audio_data.buffer.size());
+
+    // Start playback
+    SDL_PauseAudioDevice(device_id, 0);
+
+    // Wait for playback to finish
+    SDL_Delay((audio_data.length_samples * 1000) / audio_data.sample_rate);
+
+    SDL_CloseAudioDevice(device_id);
 }
 #pragma endregion Process media files to play on SDL_audio
 
@@ -93,6 +127,8 @@ void Controller::PlayMediaLoop(const int& index) {
     nextRect.y = playPauseRect.y;
 
     isPlaying = true;
+    PlayAudio(curMedia.load()->Path());
+
     bool quit = false;
     while (!quit && !quitFlag.load()) {
         while (SDL_PollEvent(&event)) {

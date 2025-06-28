@@ -51,6 +51,7 @@ add_executable (LinuxMediaPlayer
     "ui/ConsoleView.h" "ui/ConsoleView.cpp"
     "controller/Controller.h" "controller/Controller.cpp" 
     "controller/SDLController.h" "controller/SDLController.cpp"
+    "controller/AudioProcessor.h" "controller/AudioProcessor.cpp"
 )
 
 set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")

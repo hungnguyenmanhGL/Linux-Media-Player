@@ -10,15 +10,7 @@
 #include "MediaManager.h"
 #include "ConsoleView.h"
 #include "Helper.h"
- 
-extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libswresample/swresample.h>
-#include <libswscale/swscale.h>
-#include <libavutil/avutil.h>
-#include <libavutil/channel_layout.h>
-}
+#include "AudioProcessor.h"
 
 class Controller
 {
@@ -50,6 +42,7 @@ public:
 private:
 	MediaManager manager;
 	ConsoleView console;
+	AudioProcessor processor;
 	thread sdlThread;
 
 	bool isPlaying;
