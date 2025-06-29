@@ -4,6 +4,7 @@ Controller::Controller()
 {
 	manager = MediaManager();
 	console = ConsoleView(manager);
+    fullSecWaitCount = 1000 / msWait;
 
     cout << "FFmpeg Version: " << AV_STRINGIFY(LIBAVUTIL_VERSION_MAJOR) << "."
         << AV_STRINGIFY(LIBAVUTIL_VERSION_MINOR) << "."
@@ -62,9 +63,11 @@ void Controller::PlayAudio(const string& path) {
         return;
     }
 
-    // Queue audio data
+    // Queue audio data, ready to play
     SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
-    // Start playback
+
+    int waitCnt = 0;
+    int playTime = 0;
 
     while (!quitFlag.load() && !windowCloseFlag.load()) {
         if (isPlaying.load()) {
@@ -76,6 +79,7 @@ void Controller::PlayAudio(const string& path) {
 
         /*if (changeMediaFlag.load()) {
             string changePath;
+            playTime = 0;
             if (curPlaylistIndex == MEDIA_PLAYLIST_INDEX)
                 changePath = manager.GetMedia(curMediaIndex)->Path();
             else
@@ -88,6 +92,7 @@ void Controller::PlayAudio(const string& path) {
 
         if (prevFlag.load()) {
             string prevPath = GetPreviousMediaPath();
+            playTime = 0;
             processor.ProcessAudioFile(prevPath, audioData);
             SDL_ClearQueuedAudio(deviceId);
             SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
@@ -95,6 +100,7 @@ void Controller::PlayAudio(const string& path) {
         }
         if (nextFlag.load()) {
             string nextPath = GetNextMediaPath();
+            playTime = 0;
             processor.ProcessAudioFile(nextPath, audioData);
             SDL_ClearQueuedAudio(deviceId);
             SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
@@ -103,10 +109,20 @@ void Controller::PlayAudio(const string& path) {
         
         if (SDL_GetQueuedAudioSize(deviceId) == 0) {
             string nextPath = GetNextMediaPath();
+            playTime = 0;
             processor.ProcessAudioFile(nextPath, audioData);
             SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
         }
         SDL_Delay(msWait); //delay before next call to improve performance
+        
+        //only count time if audio is playing
+        if (isPlaying.load()) waitCnt++;
+        //if wait count = 1 second -> increase playTime by 1
+        if (waitCnt == fullSecWaitCount) {
+            waitCnt = 0;
+            playTime++;
+            SetPlayTimeString(playTime);
+        }
     }
     SDL_CloseAudioDevice(deviceId);
 }
@@ -149,11 +165,22 @@ void Controller::SetCurrentPlayingIndex(const int& plIndex, const int& mediaInde
     if (plIndex == MEDIA_PLAYLIST_INDEX) {
         playingMediaName = manager.GetMedia(curMediaIndex)->Name();
         curPlaylistName = "";
+        SetDurationString(manager.GetMedia(curMediaIndex)->Duration());
     }
     else {
         playingMediaName = manager.GetPlaylist(curPlaylistIndex).GetMedia(curMediaIndex)->Name();
         curPlaylistName = manager.GetPlaylist(curPlaylistIndex).Name();
+        SetDurationString(manager.GetPlaylist(curPlaylistIndex).GetMedia(curMediaIndex)->Duration());
     }
+    SetPlayTimeString(0);
+}
+
+void Controller::SetDurationString(const int& duration) {
+    durationStr = Helper::GetAudioDurationString(duration);
+}
+
+void Controller::SetPlayTimeString(const int& sec) {
+    playTimeStr = Helper::GetAudioDurationString(sec);
 }
 #pragma endregion Process media files to play on SDL_audio
 
@@ -175,6 +202,8 @@ void Controller::PlayMediaLoop(const int& index) {
     SDL_Color textColor = { 255, 255, 255, 255 };
     FC_Font* font = FC_CreateFont();
     FC_LoadFont(font, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 28, textColor, TTF_STYLE_NORMAL);
+    FC_Font* durationFont = FC_CreateFont();
+    FC_LoadFont(durationFont, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 22, textColor, TTF_STYLE_NORMAL);
 
     //prepare buttons - Play/Pause, Next, Previous
     SDL_Texture* playTexture = nullptr;
@@ -265,7 +294,13 @@ void Controller::PlayMediaLoop(const int& index) {
         FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4, playingMediaName.c_str());
         //adjust to put playlist name under media name
         textWidth = FC_GetWidth(font, "%s", curPlaylistName.c_str());
-        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4 + 20, curPlaylistName.c_str());
+        FC_Draw(font, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4 + 40, curPlaylistName.c_str());
+
+        //show play time + duration
+        string timeStr = playTimeStr + " / " + durationStr;
+        textWidth = FC_GetWidth(durationFont, "%s", timeStr.c_str());
+        FC_Draw(durationFont, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4 + 80, 
+            timeStr.c_str());
 
         SDL_RenderPresent(render);
     }

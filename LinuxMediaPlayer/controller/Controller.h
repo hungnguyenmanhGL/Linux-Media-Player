@@ -58,9 +58,11 @@ private:
 	bool ttfInit;
 	bool imgInit;
 
-	//string used to render on SDL Window of current playing media's name
+	//strings used to render on SDL Window of current playing media's data
 	string playingMediaName;
 	string curPlaylistName;
+	string playTimeStr;
+	string durationStr;
 
 	atomic<int> curPlaylistIndex;
 	atomic<int> curMediaIndex;
@@ -68,6 +70,8 @@ private:
 	int btnWidth = 60;
 	int btnHeight = 60;
 	int msWait = 50;
+	//the number of msWait's count to achieve a full second;
+	int fullSecWaitCount;
 
 	SDL_Texture* LoadTexture(const std::string& path, SDL_Renderer* renderer);
 	void SetupButtonTexture(SDL_Renderer*& render,
@@ -80,5 +84,10 @@ private:
 	void PlayAudio(const string& path);
 	string GetNextMediaPath();
 	string GetPreviousMediaPath();
+
+	//set the indexes of current playing media + playlist, also set the duration + play time
 	void SetCurrentPlayingIndex(const int& plIndex, const int& mediaIndex);
+
+	void SetDurationString(const int& duration);
+	void SetPlayTimeString(const int& second);
 };

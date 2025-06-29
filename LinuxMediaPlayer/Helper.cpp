@@ -56,3 +56,36 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 	} while (!allowed);
 	return res;
 }
+
+string Helper::GetAudioDurationString(int secs) {
+	int hour, minute;
+	const int hourInSecond = 3600;
+	const int minInSecond = 60;
+	string hh, mm, ss;
+
+	if (secs >= hourInSecond) {
+		hour = secs / hourInSecond;
+		secs -= hour * hourInSecond;
+		hh = to_string(hour);
+		if (hour < 10) hh = '0' + hh;
+
+		minute = secs / minInSecond;
+		secs -= minInSecond * minute;
+		mm = to_string(minute);
+		if (minute < 10) mm = '0' + mm;
+
+		ss = to_string(secs);
+		if (secs < 10) ss = '0' + ss;
+		return hh + ":" + mm + ":" + ss;
+	}
+	else {
+		minute = secs / minInSecond;
+		secs -= minInSecond * minute;
+		mm = to_string(minute);
+		if (minute < 10) mm = '0' + mm;
+
+		ss = to_string(secs);
+		if (secs < 10) ss = '0' + ss;
+		return mm + ":" + ss;
+	}
+}
