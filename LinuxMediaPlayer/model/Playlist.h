@@ -29,7 +29,7 @@ public:
 
 	void RemoveMedia(const int& index);
 
-	shared_ptr<MediaFile> At(const int& index);
+	shared_ptr<MediaFile>& At(const int& index);
 
 	void Print(bool showContent);
 

@@ -24,7 +24,7 @@ void Playlist::RemoveMedia(const int& index) {
 	printf("Playlist %s has %d entry(s).\n", name.c_str(), Count());
 }
 
-shared_ptr<MediaFile> Playlist::At(const int& index) {
+shared_ptr<MediaFile>& Playlist::At(const int& index) {
 	return this->mediaList[index];
 }
 

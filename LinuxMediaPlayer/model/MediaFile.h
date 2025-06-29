@@ -1,11 +1,20 @@
 #pragma once
 #include <string>
 #include <stdio.h>
+#include <unordered_map>
 using namespace std;
 
 enum MediaType {
 	AUDIO = 0,
 	VIDEO = 1
+};
+
+enum MetadataEnum {
+	TITLE = 0,
+	ALBUM = 1,
+	ARTIST = 2,
+	GENRE = 3,
+	PUBLISH_YEAR = 4
 };
 
 class MediaFile
@@ -48,7 +57,7 @@ public:
 
 	void SetYear(const int& year) { this->publishYear = year;  }
 
-	void SetGenre(const int& genre) { this->genre = genre; }
+	void SetGenre(const string& genre) { this->genre = genre; }
 
 	virtual void Print();
 

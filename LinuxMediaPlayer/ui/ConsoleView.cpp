@@ -31,7 +31,7 @@ void ConsoleView::PrintCmdPrompt() {
     case ConsoleState::MEDIA_LIST: { ////can call play media from here
         cout << "Viewing list of media. Input command.\n"
             " [P]rev, [N]ext, [G]o to page\n"
-            " Show media [D]etails\n"
+            " Show media [D]etails, [E]dit metadata\n"
             " [F]Play media\n"
             " [S]witch to playlist\n"
             " [Q]uit. Command: ";
@@ -49,7 +49,8 @@ void ConsoleView::PrintCmdPrompt() {
     case ConsoleState::PLAYLIST_CONTENT: { //can call play media from here
         cout << "Viewing playlist's content. Input command.\n"
             " [P]rev media page, [N]ext media page, [G]o to page\n"
-            " [A]dd media, [R]emove media, Show media [D]etails\n"
+            " [A]dd media, [R]emove media\n"
+            " Show media [D]etails, [E]dit metadata\n"
             " [F]Play media\n"
             " [B]ack. Command: ";
         break;
@@ -107,9 +108,9 @@ void ConsoleView::PrintNextMediaPage(MediaManager& manager) {
 
 #pragma region SHOW_PLAYLIST
 void ConsoleView::PrintAllPlaylists(MediaManager& manager) {
-    for (int i = 0; i < manager.Playlists().size(); i++) {
+    for (int i = 0; i < manager.PlaylistCount(); i++) {
         cout << i << ". ";
-        manager.Playlists()[i].Print(true);
+        manager.GetPlaylist(i).Print(true);
     }
 }
 
@@ -127,7 +128,7 @@ void ConsoleView::PrintPlaylistByPage(MediaManager& manager, const int& page) {
     for (int i = 0; i < cnt; i++) {
         int index = startIndex + i;
         cout << index << ". ";
-        manager.Playlists()[index].Print(false);
+        manager.GetPlaylist(index).Print(false);
     };
     printf("[PLAYLISTS-ALL] Viewing page %d of %d.\n", page, lastPlPage);
 }

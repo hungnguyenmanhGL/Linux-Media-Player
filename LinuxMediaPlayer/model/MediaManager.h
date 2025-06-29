@@ -42,14 +42,19 @@ public:
 	playlistIndex is the target playlist's index in playlists, mediaIndex is target media's index in that playlist*/
 	void RemoveMediaFromPlaylist(const int& playlistIndex, const int& mediaIndex);
 
+	void EditMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum);
+
 	//getters
-	vector<shared_ptr<MediaFile>> MediaList() { return this->mediaList; }
-	vector<Playlist> Playlists() { return this->playlists; }
 	int FileCount() { return this->mediaList.size(); }
 	int PlaylistCount() { return this->playlists.size(); }
 
 	Playlist& GetPlaylist(const int& index);
+
+	//get media from mediaList
 	shared_ptr<MediaFile>& GetMedia(const int& index);
+
+	//get media from a playlist, if plIndex is out of range of playlists -> get media from mediaList
+	shared_ptr<MediaFile>& GetMedia(const int& plIndex, const int& mediaIndex);
 
 private:
 	vector<shared_ptr<MediaFile>> mediaList;

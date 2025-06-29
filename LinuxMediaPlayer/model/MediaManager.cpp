@@ -1,4 +1,5 @@
 #include "MediaManager.h"
+#include "Helper.h"
 
 unordered_set<string> audioExtSet = { ".mp3", ".wav" };
 unordered_set<string> videoExtSet = { ".mp4" };
@@ -8,6 +9,9 @@ MediaManager::MediaManager()
     playlists.push_back(Playlist("Favorite"));
     playlists.push_back(Playlist("Starred"));
     GetAllMedia(".");
+    playlists[0].AddMedia(mediaList[5]);
+    playlists[0].AddMedia(mediaList[10]);
+    playlists[0].AddMedia(mediaList[7]);
 }
 
 MediaManager::~MediaManager()
@@ -107,10 +111,62 @@ void MediaManager::RemoveMediaFromPlaylist(const int& plIndex, const int& mediaI
     printf("Removed %s from playlist %s.\n", mediaName.c_str(), playlists[plIndex].Name().c_str());
 }
 
+void MediaManager::EditMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum) {
+    shared_ptr<MediaFile>& media = GetMedia(mediaIndex);
+    if (plIndex >= 0) media = playlists[plIndex].At(mediaIndex);
+
+    TagLib::FileRef fileRef(media->Path().c_str());
+    TagLib::Tag* tag = fileRef.tag();
+    switch (dataEnum) {
+    case MetadataEnum::TITLE: {
+        string title = Helper::InputString("Input title: ", nullptr);
+        tag->setTitle(title);
+        media->SetTitle(title);
+        break;
+    }
+    case MetadataEnum::ALBUM: {
+        string album = Helper::InputString("Input album: ", nullptr);
+        tag->setAlbum(album);
+        media->SetAlbum(album);
+        break;
+    }
+    case MetadataEnum::ARTIST: {
+        string artist = Helper::InputString("Input artist: ", nullptr);
+        tag->setArtist(artist);
+        media->SetArtist(artist);
+        break;
+    }
+    case MetadataEnum::GENRE: {
+        string genre = Helper::InputString("Input genre: ", nullptr);
+        tag->setGenre(genre);
+        media->SetGenre(genre);
+        break;
+    }
+    case MetadataEnum::PUBLISH_YEAR: {
+        cout << "Input year. ";
+        int year = Helper::InputInt(0, 2025);
+        tag->setYear(year);
+        media->SetYear(year);
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+    fileRef.save();
+}
+
 Playlist& MediaManager::GetPlaylist(const int& index) {
     return this->playlists[index];
 }
 
 shared_ptr<MediaFile>& MediaManager::GetMedia(const int& index) {
     return this->mediaList[index];
+}
+
+shared_ptr<MediaFile>& MediaManager::GetMedia(const int& plIndex, const int& mediaIndex) {
+    if (plIndex >= 0 && plIndex < playlists.size()) {
+        return playlists[plIndex].At(mediaIndex);
+    }
+    return GetMedia(mediaIndex);
 }

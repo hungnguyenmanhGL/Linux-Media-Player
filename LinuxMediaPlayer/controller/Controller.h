@@ -34,8 +34,8 @@ public:
 	//play media directly from media list view
 	void PlayMediaLoop(const int& index);
 
-	//play media index m from playlist index n
-	void PlayMediaFromPlaylistLoop(const int& playlistIndex, const int& mediaIndex);
+	//edit media's metadata, already have console.Seperate()
+	void EditMetadata(const int& plIndex, const int& mediaIndex);
 
 private:
 	const int MEDIA_PLAYLIST_INDEX = -1;
@@ -67,6 +67,7 @@ private:
 
 	int btnWidth = 60;
 	int btnHeight = 60;
+	int msWait = 50;
 
 	SDL_Texture* LoadTexture(const std::string& path, SDL_Renderer* renderer);
 	void SetupButtonTexture(SDL_Renderer*& render,

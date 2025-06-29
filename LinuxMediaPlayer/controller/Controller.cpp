@@ -106,7 +106,7 @@ void Controller::PlayAudio(const string& path) {
             processor.ProcessAudioFile(nextPath, audioData);
             SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
         }
-        SDL_Delay(50); //delay 50ms before next call to improve performance
+        SDL_Delay(msWait); //delay before next call to improve performance
     }
     SDL_CloseAudioDevice(deviceId);
 }
@@ -293,6 +293,14 @@ void Controller::MainLoop() {
             console.PrintMediaData(manager, index);
             break;
         }
+        case 'E': {
+            cout << "Input entry index to edit. ";
+            int mediaIndex = Helper::InputInt(0, manager.FileCount() - 1);
+            EditMetadata(-1, mediaIndex);
+            console.Seperate();
+            console.PrintCurrentMediaPage(manager);
+            break;
+        }
         case 'F': {
             if (manager.FileCount() == 0) {
                 cout << "No media to play.\n";
@@ -381,6 +389,7 @@ bool Controller::PlaylistLoop() {
             int index = Helper::InputInt(-1, manager.PlaylistCount() - 1);
             if (index == -1) break;
             ContentLoop(index);
+            console.PrintPlaylistByPage(manager, 0);
             break;
         }
         case 'D': { //delete a playlist
@@ -409,6 +418,8 @@ bool Controller::PlaylistLoop() {
                     return manager.IsPlaylistNameValid(nameToCheck);
                 });
             manager.UpdatePlaylistName(index, name);
+            console.Seperate();
+            console.PrintPlaylistByPage(manager, 0);
             break;
         }
         case 'P': { //previous page
@@ -467,6 +478,12 @@ void Controller::ContentLoop(const int& playlistIndex) {
             curPl.At(index)->Print();
             break;
         }
+        case 'E': {
+            cout << "Input media index to edit. ";
+            int index = Helper::InputInt(0, curPl.Count() - 1);
+            EditMetadata(playlistIndex, index);
+            break;
+        }
         case 'F': {
             if (curPl.Count() == 0) {
                 cout << "No media in the playlist.\n";
@@ -523,7 +540,7 @@ void Controller::ContentLoop(const int& playlistIndex) {
             console.PrintPlaylistContentPage(curPl, 0);
             break;
         }
-        default: { //back to view media list
+        default: {
             console.Seperate();
             cout << "Invalid command. Try again.\n";
             break;
@@ -586,6 +603,20 @@ void Controller::AddMediaToPlaylistLoop(Playlist& curPl) {
     } while (cmd != 'B');
 }
 
+void Controller::EditMetadata(const int& plIndex, const int& mediaIndex) {
+    int dataEnum;
+    do {
+        console.Seperate();
+        manager.GetMedia(plIndex, mediaIndex)->Print();
+        printf("Input index of metadata to edit (Input -1 to cancel):\n"
+            " %d = Title, %d = Album , %d = Artist, %d = Genre, %d = Publish year.\n",
+            MetadataEnum::TITLE, MetadataEnum::ALBUM, MetadataEnum::ARTIST, MetadataEnum::GENRE, MetadataEnum::PUBLISH_YEAR);
+        dataEnum = Helper::InputInt(-1, MetadataEnum::PUBLISH_YEAR);
+        if (dataEnum >= MetadataEnum::TITLE) manager.EditMetadata(plIndex, mediaIndex, (MetadataEnum)dataEnum);
+    } while (dataEnum != -1);
+}
+
+#pragma region SDL_SETUP
 SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer) {
     SDL_Texture* newTexture = nullptr;
 
@@ -605,7 +636,7 @@ SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer)
     return newTexture;
 }
 
-void Controller::SetupButtonTexture(SDL_Renderer*& render, 
+void Controller::SetupButtonTexture(SDL_Renderer*& render,
     SDL_Texture*& playTexture, SDL_Texture*& pauseTexture, SDL_Texture*& prevTexture, SDL_Texture*& nextTexture) {
     playTexture = LoadTexture("assets/play.png", render);
     pauseTexture = LoadTexture("assets/pause.png", render);
@@ -628,3 +659,4 @@ void Controller::SetupButtonRect(const int& winWidth, const int& winHeight, SDL_
     nextRect.x = playPauseRect.x + btnWidth * 2;
     nextRect.y = playPauseRect.y;
 }
+#pragma endregion Setup sdl-related components

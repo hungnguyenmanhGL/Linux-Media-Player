@@ -23,6 +23,7 @@ int Helper::InputInt(int minInclu, int maxInclu) {
 			if (val < minInclu) {
 				cout << "Value out of range.\n";
 			}
+			cin.ignore();
 		} while (cin.fail() || val < minInclu);
 	}
 	else {
@@ -38,6 +39,7 @@ int Helper::InputInt(int minInclu, int maxInclu) {
 			if (val < minInclu || val > maxInclu) {
 				cout << "Value out of range.\n";
 			}
+			cin.ignore();
 		} while (cin.fail() || val < minInclu || val > maxInclu);
 	}
 	return val;
@@ -49,7 +51,8 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 	do {
 		cout << inputMsg;
 		getline(cin, res);
-		allowed = checkFunc(res);
+		if (checkFunc != nullptr) allowed = checkFunc(res);
+		else allowed = true;
 	} while (!allowed);
 	return res;
 }
