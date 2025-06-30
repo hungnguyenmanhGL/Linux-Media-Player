@@ -5,6 +5,9 @@ using namespace std;
 int main()
 {
 	Controller control;
+	control.InitSDL();
 	control.MainLoop();
+	control.TerminateThreads();
+	control.QuitSDL();
 	return 0;
 }

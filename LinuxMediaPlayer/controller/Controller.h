@@ -18,6 +18,10 @@ public:
 	Controller();
 	~Controller();
 
+	void InitSDL();
+	void QuitSDL();
+	void TerminateThreads();
+
 	void MainLoop();
 
 	//TO: ContentLoop()
@@ -53,6 +57,19 @@ private:
 	atomic_bool prevFlag;
 	atomic_bool nextFlag;
 	atomic_bool changeMediaFlag;
+	atomic_bool upVolumeFlag;
+	atomic_bool downVolumeFlag;
+
+	SDL_Texture* playTexture = nullptr;
+	SDL_Texture* pauseTexture = nullptr;
+	SDL_Texture* prevTexture = nullptr;
+	SDL_Texture* nextTexture = nullptr;
+	SDL_Texture* upVolumeTexture = nullptr;
+	SDL_Texture* downVolumeTexture = nullptr;
+
+	SDL_Rect playPauseRect;
+	SDL_Rect prevRect, nextRect;
+	SDL_Rect upVolumeRect, downVolumeRect;
 
 	bool sdlInit;
 	bool ttfInit;
@@ -66,28 +83,34 @@ private:
 
 	atomic<int> curPlaylistIndex;
 	atomic<int> curMediaIndex;
+	atomic_int volume;
 
 	int btnWidth = 60;
 	int btnHeight = 60;
-	int msWait = 50;
+
+	//miliseconds of wait time between each audio loop, divisible to 1000 (1000ms = 1s)
+	int msWait = 25;
 	//the number of msWait's count to achieve a full second;
 	int fullSecWaitCount;
 
+	//SDL-related function declaration block
 	SDL_Texture* LoadTexture(const std::string& path, SDL_Renderer* renderer);
-	void SetupButtonTexture(SDL_Renderer*& render,
-		SDL_Texture*& playTexture, SDL_Texture*& pauseTexture, SDL_Texture*& prevTexture, SDL_Texture*& nextTexture);
-	void SetupButtonRect(const int& winWidth, const int& winHeight, SDL_Rect& playPauseRect, SDL_Rect& prevRect, SDL_Rect& nextRect);
-
-	void InitSDL();
-	void QuitSDL();
+	void LoadFont(FC_Font*& font, SDL_Renderer*& render, const int& size, SDL_Color color);
+	void SetupButtonTexture(SDL_Renderer*& render);
+	void SetupButtonRect(const int& winWidth, const int& winHeight);
+	void RenderButton(SDL_Renderer*& render, SDL_Texture*& texture, SDL_Rect& rect);
+	void RenderAllButtons(SDL_Renderer*& render);
+	//end of block
 
 	void PlayAudio(const string& path);
 	string GetNextMediaPath();
 	string GetPreviousMediaPath();
-
 	//set the indexes of current playing media + playlist, also set the duration + play time
 	void SetCurrentPlayingIndex(const int& plIndex, const int& mediaIndex);
-
 	void SetDurationString(const int& duration);
 	void SetPlayTimeString(const int& second);
+
+	void GetVolumeFromSystem();
+	bool IncreaseVolume(int delta);
+	bool DecreaseVolume(int delta);
 };

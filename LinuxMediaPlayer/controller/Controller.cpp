@@ -9,12 +9,17 @@ Controller::Controller()
     cout << "FFmpeg Version: " << AV_STRINGIFY(LIBAVUTIL_VERSION_MAJOR) << "."
         << AV_STRINGIFY(LIBAVUTIL_VERSION_MINOR) << "."
         << AV_STRINGIFY(LIBAVUTIL_VERSION_MICRO) << endl;
-    InitSDL();
 }
 
 Controller::~Controller()
 {
-    QuitSDL();
+}
+
+void Controller::TerminateThreads() {
+    quitFlag.store(true);
+    if (sdlThread.joinable()) sdlThread.join();
+    if (audioThread.joinable()) audioThread.join();
+    quitFlag.store(false);
 }
 
 void Controller::InitSDL() {
@@ -113,6 +118,20 @@ void Controller::PlayAudio(const string& path) {
             processor.ProcessAudioFile(nextPath, audioData);
             SDL_QueueAudio(deviceId, audioData.buffer.data(), audioData.buffer.size());
         }
+
+        if (downVolumeFlag.load()) {
+            bool success = DecreaseVolume(1);
+            if (!success) cout << "[Controller] Failed to increase volume.\n";
+            GetVolumeFromSystem();
+            downVolumeFlag.store(false);
+        }
+        if (upVolumeFlag.load()) {
+            bool success = IncreaseVolume(1);
+            if (!success) cout << "[Controller] Failed to decrease volume.\n";
+            GetVolumeFromSystem();
+            upVolumeFlag.store(false);
+        }
+
         SDL_Delay(msWait); //delay before next call to improve performance
         
         //only count time if audio is playing
@@ -124,6 +143,7 @@ void Controller::PlayAudio(const string& path) {
             SetPlayTimeString(playTime);
         }
     }
+    SDL_ClearQueuedAudio(deviceId);
     SDL_CloseAudioDevice(deviceId);
 }
 
@@ -200,21 +220,13 @@ void Controller::PlayMediaLoop(const int& index) {
 
     //prepare FC_text
     SDL_Color textColor = { 255, 255, 255, 255 };
-    FC_Font* font = FC_CreateFont();
-    FC_LoadFont(font, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 28, textColor, TTF_STYLE_NORMAL);
-    FC_Font* durationFont = FC_CreateFont();
-    FC_LoadFont(durationFont, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", 22, textColor, TTF_STYLE_NORMAL);
+    FC_Font* font = nullptr;
+    LoadFont(font, render, 28, textColor);
+    FC_Font* durationFont = nullptr;
+    LoadFont(durationFont, render, 22, textColor);
 
-    //prepare buttons - Play/Pause, Next, Previous
-    SDL_Texture* playTexture = nullptr;
-    SDL_Texture* pauseTexture = nullptr;
-    SDL_Texture* prevTexture = nullptr;
-    SDL_Texture* nextTexture = nullptr;
-    SetupButtonTexture(render, playTexture, pauseTexture, prevTexture, nextTexture);
-
-    SDL_Rect playPauseRect;
-    SDL_Rect prevRect, nextRect;
-    SetupButtonRect(winWidth, winHeight, playPauseRect, prevRect, nextRect);
+    SetupButtonTexture(render);
+    SetupButtonRect(winWidth, winHeight);
 
     isPlaying.store(true);
     if (audioThread.joinable()) {
@@ -224,6 +236,7 @@ void Controller::PlayMediaLoop(const int& index) {
     }
     audioThread = thread(&Controller::PlayAudio, this, curMedia.load()->Path());
 
+    GetVolumeFromSystem();
     windowCloseFlag.store(false);
     while (!windowCloseFlag.load() && !quitFlag.load()) {
         while (SDL_PollEvent(&event)) {
@@ -244,6 +257,13 @@ void Controller::PlayMediaLoop(const int& index) {
                 if (SDL_PointInRect(&mousePoint, &nextRect)) {
                     nextFlag.store(true);
                 }
+
+                if (SDL_PointInRect(&mousePoint, &downVolumeRect)) {
+                    downVolumeFlag.store(true);
+                }
+                if (SDL_PointInRect(&mousePoint, &upVolumeRect)) {
+                    upVolumeFlag.store(true);
+                }
             }
         }
 
@@ -257,37 +277,7 @@ void Controller::PlayMediaLoop(const int& index) {
         SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
         SDL_RenderClear(render);
 
-        SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
-        // Fill button rect with white because images are black
-        SDL_RenderFillRect(render, &playPauseRect);
-        SDL_Texture* playPauseTexture = playTexture;
-        if (isPlaying) playPauseTexture = pauseTexture;
-        if (playPauseTexture != nullptr) {
-            SDL_RenderCopy(render, playPauseTexture, NULL, &playPauseRect);
-        }
-        else {
-            // Fallback: if texture failed to load, draw a colored rect as error
-            SDL_SetRenderDrawColor(render, 255, 0, 0, 255); //Red
-            SDL_RenderFillRect(render, &playPauseRect);
-        }
-
-        //render prev + next buttons
-        SDL_RenderFillRect(render, &prevRect);
-        if (prevTexture != nullptr) {
-            SDL_RenderCopy(render, prevTexture, NULL, &prevRect);
-        }
-        else {
-            SDL_SetRenderDrawColor(render, 255, 0, 0, 255); 
-            SDL_RenderFillRect(render, &prevRect);
-        }
-        SDL_RenderFillRect(render, &nextRect);
-        if (nextTexture != nullptr) {
-            SDL_RenderCopy(render, nextTexture, NULL, &nextRect);
-        }
-        else {
-            SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
-            SDL_RenderFillRect(render, &nextRect);
-        }
+        RenderAllButtons(render);
 
         int textWidth = FC_GetWidth(font, "%s", playingMediaName.c_str());
         int textHeight = FC_GetHeight(font, "%s", playingMediaName.c_str());
@@ -299,8 +289,10 @@ void Controller::PlayMediaLoop(const int& index) {
         //show play time + duration
         string timeStr = playTimeStr + " / " + durationStr;
         textWidth = FC_GetWidth(durationFont, "%s", timeStr.c_str());
-        FC_Draw(durationFont, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4 + 80, 
-            timeStr.c_str());
+        FC_Draw(durationFont, render, (winWidth - textWidth) / 2, (winHeight - textHeight) / 4 + 80, timeStr.c_str());
+
+        textWidth = FC_GetWidth(durationFont, "%s", to_string(volume).c_str());
+        FC_Draw(durationFont, render, (winWidth - textWidth) / 2, upVolumeRect.y, to_string(volume).c_str());
 
         SDL_RenderPresent(render);
     }
@@ -671,15 +663,21 @@ SDL_Texture* Controller::LoadTexture(const string& path, SDL_Renderer* renderer)
     return newTexture;
 }
 
-void Controller::SetupButtonTexture(SDL_Renderer*& render,
-    SDL_Texture*& playTexture, SDL_Texture*& pauseTexture, SDL_Texture*& prevTexture, SDL_Texture*& nextTexture) {
+void Controller::LoadFont(FC_Font*& font, SDL_Renderer*& render, const int& size, SDL_Color color) {
+    font = FC_CreateFont();
+    FC_LoadFont(font, render, "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf", size, color, TTF_STYLE_NORMAL);
+}
+
+void Controller::SetupButtonTexture(SDL_Renderer*& render) {
     playTexture = LoadTexture("assets/play.png", render);
     pauseTexture = LoadTexture("assets/pause.png", render);
     prevTexture = LoadTexture("assets/prev.png", render);
     nextTexture = LoadTexture("assets/next.png", render);
+    upVolumeTexture = LoadTexture("assets/volume-up.png", render);
+    downVolumeTexture = LoadTexture("assets/volume-down.png", render);
 }
 
-void Controller::SetupButtonRect(const int& winWidth, const int& winHeight, SDL_Rect& playPauseRect, SDL_Rect& prevRect, SDL_Rect& nextRect) {
+void Controller::SetupButtonRect(const int& winWidth, const int& winHeight) {
     playPauseRect.w = btnWidth;
     playPauseRect.h = btnHeight;
     playPauseRect.x = (winWidth - playPauseRect.w) / 2;
@@ -693,5 +691,69 @@ void Controller::SetupButtonRect(const int& winWidth, const int& winHeight, SDL_
     prevRect.y = playPauseRect.y;
     nextRect.x = playPauseRect.x + btnWidth * 2;
     nextRect.y = playPauseRect.y;
+
+    upVolumeRect.w = btnWidth / 3 * 2;
+    upVolumeRect.h = btnHeight / 3 * 2;
+    downVolumeRect = upVolumeRect;
+
+    upVolumeRect.x = nextRect.x;
+    upVolumeRect.y = nextRect.y - btnHeight;
+    downVolumeRect.x = prevRect.x;
+    downVolumeRect.y = upVolumeRect.y;
+}
+
+void Controller::RenderButton(SDL_Renderer*& render, SDL_Texture*& texture, SDL_Rect& rect) {
+    SDL_RenderFillRect(render, &rect);
+    if (texture != nullptr) {
+        SDL_RenderCopy(render, texture, NULL, &rect);
+    }
+    else {
+        SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
+        SDL_RenderFillRect(render, &rect);
+    }
+}
+
+void Controller::RenderAllButtons(SDL_Renderer*& render) {
+    SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+    // Fill button rect with white because images are black
+    SDL_Texture* playPauseTexture = playTexture;
+    if (isPlaying.load()) playPauseTexture = pauseTexture;
+    RenderButton(render, playPauseTexture, playPauseRect);
+    RenderButton(render, prevTexture, prevRect);
+    RenderButton(render, nextTexture, nextRect);
+    RenderButton(render, upVolumeTexture, upVolumeRect);
+    RenderButton(render, downVolumeTexture, downVolumeRect);
 }
 #pragma endregion Setup sdl-related components
+
+#pragma region System Volume
+void Controller::GetVolumeFromSystem() {
+    FILE* pipe = popen("pactl get-sink-volume @DEFAULT_SINK@ | grep -o '[0-9]*%' | head -1 | tr -d '%'", "r");
+    if (!pipe) {
+        cerr << "[CONTROLLER] Cannot open system file for volume control.\n";
+        return;
+    }
+
+    char buffer[16];
+    if (fgets(buffer, sizeof(buffer), pipe)) {
+        pclose(pipe);
+        volume = atoi(buffer);
+        return;
+    }
+    pclose(pipe);
+}
+
+//delta is by percentage
+bool Controller::IncreaseVolume(int delta) {
+    if (volume == 100) return true;
+    string command = "pactl set-sink-volume @DEFAULT_SINK@ +" + to_string(delta) + "%";
+    return system(command.c_str()) == 0;
+}
+
+bool Controller::DecreaseVolume(int delta) {
+    if (volume == 0) return true;
+    string command = "pactl set-sink-volume @DEFAULT_SINK@ -" + to_string(delta) + "%";
+    return system(command.c_str()) == 0;
+}
+#pragma endregion Adjust volume with system Linux + pactl (pulseaudio-utils)
+

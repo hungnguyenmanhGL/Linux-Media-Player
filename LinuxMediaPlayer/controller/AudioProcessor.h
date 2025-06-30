@@ -37,7 +37,7 @@ public:
 
     void Cleanup();
 
-    bool ProcessAudioFile(const std::string& path, AudioData& audio_data);
+    bool ProcessAudioFile(const string& path, AudioData& audio_data);
 
 private:
     bool DecodeAudio(AudioData& audio_data);
