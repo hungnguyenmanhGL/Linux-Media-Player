@@ -57,6 +57,12 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 	return res;
 }
 
+char Helper::GetFirstCharInput() {
+	string input;
+	getline(cin, input);
+	return input.at(0);
+}
+
 string Helper::GetAudioDurationString(int secs) {
 	int hour, minute;
 	const int hourInSecond = 3600;

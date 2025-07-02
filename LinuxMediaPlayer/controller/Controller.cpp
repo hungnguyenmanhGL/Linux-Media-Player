@@ -308,8 +308,7 @@ void Controller::MainLoop() {
 
     do {
         console.PrintCmdPrompt();
-        cin >> cmd;
-        cin.ignore();
+        cmd = Helper::GetFirstCharInput();
         cmd = toupper(cmd);
 
         switch (cmd) {
@@ -373,6 +372,7 @@ void Controller::MainLoop() {
         case 'S': {
             console.Clear();
             quitSignal = PlaylistLoop();
+            console.Seperate();
             if (!quitSignal) console.PrintMediaPage(0, manager);
             break;
         }
@@ -401,12 +401,12 @@ bool Controller::PlaylistLoop() {
     char cmd;
     do {
         console.PrintCmdPrompt();
-        cin >> cmd;
-        cin.ignore();
+        cmd = Helper::GetFirstCharInput();
         cmd = toupper(cmd);
 
         switch (cmd) {
         case 'A': { //create a new playlist
+            console.Seperate();
             string name = Helper::InputString("Create a new playlist. Input unique name: ", 
                 [&](const std::string& nameToCheck) {
                     return manager.IsPlaylistNameValid(nameToCheck);
@@ -422,6 +422,7 @@ bool Controller::PlaylistLoop() {
             int index = Helper::InputInt(-1, manager.PlaylistCount() - 1);
             if (index == -1) break;
             ContentLoop(index);
+            console.Seperate();
             console.PrintPlaylistByPage(manager, 0);
             break;
         }
@@ -431,18 +432,44 @@ bool Controller::PlaylistLoop() {
             if (index == -1) break;
             manager.DeletePlaylist(index);
 
+            console.Seperate();
             console.CalculatePlaylistPages(manager, true);
             console.PrintPlaylistByPage(manager, 0);
             break;
         }
+
+        //page navigation block
         case 'G': { //go to playlist page n
+            if (console.LastPlaylistPage() == 0) {
+                console.Seperate();
+                cout << "There is only 1 page.\n";
+                console.PrintPlaylistByPage(manager, 0);
+                break;
+            }
             int page = Helper::InputInt(0, console.LastPlaylistPage());
+            console.Seperate();
             console.PrintPlaylistByPage(manager, page);
             break;
         }
         case 'N': { //next page
+            console.Seperate();
             console.PrintNextPlaylistPage(manager);
             break;
+        }
+        case 'P': { //previous page
+            console.Seperate();
+            console.PrintPrevPlaylistPage(manager);
+            break;
+        }
+        //end of navigation block
+
+        case 'Q': { //quit -> back to media loop for quit logic
+            return true;
+        }
+        case 'S': { //switch back to media view
+            console.SwitchState(ConsoleState::MEDIA_LIST);
+            cout << "Switching back to media view...\n";
+            return false;
         }
         case 'U': { //Update playlist name
             int index = Helper::InputInt(0, manager.PlaylistCount() - 1);
@@ -455,20 +482,10 @@ bool Controller::PlaylistLoop() {
             console.PrintPlaylistByPage(manager, 0);
             break;
         }
-        case 'P': { //previous page
-            console.PrintPrevPlaylistPage(manager);
-            break;
-        }
-        case 'Q': { //quit -> back to media loop for quit logic
-            return true;
-        }
-        case 'S': { //switch back to media view
-            console.SwitchState(ConsoleState::MEDIA_LIST);
-            cout << "Switching back to media view...\n";
-            return false;
-        }
         default:
+            console.Seperate();
             cout << "Invalid command.\n";
+            console.PrintPlaylistByPage(manager, 0);
             break;
         }
     } while (cmd != 'Q');

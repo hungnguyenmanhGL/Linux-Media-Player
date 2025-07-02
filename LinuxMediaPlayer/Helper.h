@@ -17,6 +17,8 @@ public:
 	//input string with a function pointer to check validity, invalid string msg should be printed by check function
 	static string InputString(const string& inputMsg, function<bool(const string&)> checkFunc);
 
+	static char GetFirstCharInput();
+
 	static string GetAudioDurationString(int secs);
 
 private:
