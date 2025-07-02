@@ -9,9 +9,9 @@ MediaManager::MediaManager()
     playlists.push_back(Playlist("Favorite"));
     playlists.push_back(Playlist("Starred"));
     GetAllMedia(".");
-    playlists[0].AddMedia(mediaList[5]);
-    playlists[0].AddMedia(mediaList[10]);
-    playlists[0].AddMedia(mediaList[7]);
+    //playlists[0].AddMedia(mediaList[5]);
+    //playlists[0].AddMedia(mediaList[10]);
+    //playlists[0].AddMedia(mediaList[7]);
 }
 
 MediaManager::~MediaManager()

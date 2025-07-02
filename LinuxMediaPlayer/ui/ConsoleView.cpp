@@ -70,7 +70,13 @@ void ConsoleView::PrintCmdPrompt() {
 }
 
 void ConsoleView::PrintMediaData(MediaManager& manager, const int& index) {
+    printf("Media %s's data:\n", manager.GetMedia(index)->Name().c_str());
     manager.GetMedia(index)->Print();
+    string cmd;
+    cout << "Press Enter to return.";
+    while (getline(cin, cmd)) {
+        break;
+    }
 }
 
 #pragma region SHOW_MEDIA_PAGES

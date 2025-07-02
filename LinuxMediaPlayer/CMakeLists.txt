@@ -50,7 +50,7 @@ add_executable (LinuxMediaPlayer
     "model/MediaManager.h" "model/MediaManager.cpp"
     "ui/ConsoleView.h" "ui/ConsoleView.cpp"
     "controller/Controller.h" "controller/Controller.cpp" 
-    "controller/SDLController.h" "controller/SDLController.cpp"
+    #"controller/SDLController.h" "controller/SDLController.cpp"
     "controller/AudioProcessor.h" "controller/AudioProcessor.cpp"
 )
 
@@ -93,4 +93,25 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 
+set(LIBS_DEST_DIR "$<TARGET_FILE_DIR:LinuxMediaPlayer>/shared_lib")
+
+get_target_property(LIBAV_LINK_LIBS PkgConfig::LIBAV INTERFACE_LINK_LIBRARIES)
+
+set(SHARED_LIBS_TO_COPY "")
+
+foreach(lib ${LIBAV_LINK_LIBS})
+    if(EXISTS "${lib}" AND "${lib}" MATCHES "\\.so$")
+        list(APPEND SHARED_LIBS_TO_COPY "${lib}")
+    endif()
+endforeach()
+
+list(REMOVE_DUPLICATES SHARED_LIBS_TO_COPY)
+
+add_custom_command(
+    TARGET LinuxMediaPlayer POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${LIBS_DEST_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying required shared libraries to ${LIBS_DEST_DIR}..."
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SHARED_LIBS_TO_COPY} "${LIBS_DEST_DIR}"
+    COMMENT "Copying required shared libraries completed."
+)
 # TODO: Add tests and install targets if needed.

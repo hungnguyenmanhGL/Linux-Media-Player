@@ -2,7 +2,6 @@
 
 Controller::Controller()
 {
-	manager = MediaManager();
 	console = ConsoleView(manager);
     fullSecWaitCount = 1000 / msWait;
 
@@ -317,7 +316,11 @@ void Controller::MainLoop() {
         case 'D': {
             cout << "Input entry index to show details. ";
             int index = Helper::InputInt(0, manager.FileCount() - 1);
+            console.Seperate();
             console.PrintMediaData(manager, index);
+
+            console.Seperate();
+            console.PrintCurrentMediaPage(manager);
             break;
         }
         case 'E': {
@@ -349,6 +352,7 @@ void Controller::MainLoop() {
         }
         case 'G': {
             int page = Helper::InputInt(0, console.LastMediaPage());
+            console.Seperate();
             console.PrintMediaPage(page, manager);
             break;
         }
@@ -357,10 +361,12 @@ void Controller::MainLoop() {
             break;
         }
         case 'P': {
+            console.Seperate();
             console.PrintPrevMediaPage(manager);
             break;
         }
         case 'N': {
+            console.Seperate();
             console.PrintNextMediaPage(manager);
             break;
         }
