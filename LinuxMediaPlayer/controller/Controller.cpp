@@ -347,21 +347,17 @@ void Controller::MainLoop() {
                 quitFlag.store(false);
             }
             sdlThread = thread(&Controller::PlayMediaLoop,this, index);
+
+            console.Seperate();
+            console.PrintCurrentMediaPage(manager);
             break;
         }
+        
+        //navigation block
         case 'G': {
             int page = Helper::InputInt(0, console.LastMediaPage());
             console.Seperate();
             console.PrintMediaPage(page, manager);
-            break;
-        }
-        case 'Q': {
-            quitSignal = true;
-            break;
-        }
-        case 'P': {
-            console.Seperate();
-            console.PrintPrevMediaPage(manager);
             break;
         }
         case 'N': {
@@ -369,15 +365,27 @@ void Controller::MainLoop() {
             console.PrintNextMediaPage(manager);
             break;
         }
+        case 'P': {
+            console.Seperate();
+            console.PrintPrevMediaPage(manager);
+            break;
+        }
+        //end of navigation block
+        
+        case 'Q': {
+            quitSignal = true;
+            break;
+        }
         case 'S': {
-            console.Clear();
             quitSignal = PlaylistLoop();
             console.Seperate();
             if (!quitSignal) console.PrintMediaPage(0, manager);
             break;
         }
         default:
+            console.Seperate();
             cout << "Invalid command.\n";
+            console.PrintCurrentMediaPage(manager);
             break;
         }
 
@@ -427,6 +435,12 @@ bool Controller::PlaylistLoop() {
             break;
         }
         case 'D': { //delete a playlist
+            if (manager.PlaylistCount() == 0) {
+                console.Seperate();
+                cout << "There is 0 playlist to delete.\n";
+                break;
+            }
+
             cout << "Input index to delete (-1 = cancel). ";
             int index = Helper::InputInt(-1, manager.PlaylistCount() - 1);
             if (index == -1) break;
@@ -509,6 +523,7 @@ void Controller::ContentLoop(const int& playlistIndex) {
 
         switch (cmd) {
         case 'A': {
+            console.Seperate();
             AddMediaToPlaylistLoop(curPl);
             console.Seperate();
             //recalculate page number after addition
@@ -551,6 +566,9 @@ void Controller::ContentLoop(const int& playlistIndex) {
                 quitFlag.store(false);
             }
             sdlThread = thread(&Controller::PlayMediaLoop, this, mediaIndex);
+
+            console.Seperate();
+            console.PrintPlaylistContentPage(curPl, curPage);
             break;
         }
         //navigate playlist's content
@@ -578,6 +596,11 @@ void Controller::ContentLoop(const int& playlistIndex) {
 
         case 'R': { //remove a media from playlist
             console.Seperate();
+            if (curPl.Count() == 0) {
+                printf("Playlist %s has 0 file.\n", curPl.Name().c_str());
+                break;
+            }
+
             console.PrintPlaylistContentPage(curPl, curPage);
             cout << "Input -1 to cancel. ";
             int index = Helper::InputInt(-1, curPl.Count() - 1);
@@ -620,7 +643,9 @@ void Controller::AddMediaToPlaylistLoop(Playlist& curPl) {
                     entry->Name().c_str(), curPl.Name().c_str());
             }
             else {
+                console.Seperate();
                 curPl.AddMedia(entry);
+                console.PrintMediaPage(curPage, manager);
             }
             break;
         }
@@ -719,9 +744,10 @@ void Controller::SetupButtonRect(const int& winWidth, const int& winHeight) {
     upVolumeRect.h = btnHeight / 3 * 2;
     downVolumeRect = upVolumeRect;
 
-    upVolumeRect.x = nextRect.x;
-    upVolumeRect.y = nextRect.y - btnHeight;
-    downVolumeRect.x = prevRect.x;
+    int midX = (winWidth - upVolumeRect.w) / 2;
+    upVolumeRect.x = midX + upVolumeRect.w * 2;
+    upVolumeRect.y = nextRect.y - upVolumeRect.h * 2;
+    downVolumeRect.x = midX - upVolumeRect.w * 2;
     downVolumeRect.y = upVolumeRect.y;
 }
 

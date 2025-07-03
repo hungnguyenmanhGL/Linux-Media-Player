@@ -19,8 +19,6 @@ public:
 	ConsoleView(MediaManager& manager);
 	~ConsoleView();
 
-	void Clear();
-
 	void PrintCmdPrompt();
 
 	void PrintMediaPage(const int& page, MediaManager& manager);

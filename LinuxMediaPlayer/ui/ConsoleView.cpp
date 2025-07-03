@@ -16,10 +16,6 @@ ConsoleView::~ConsoleView()
 {
 }
 
-void ConsoleView::Clear() {
-    //system("clear");
-}
-
 void ConsoleView::PrintMediaList(MediaManager& manager) {
     for (int i = 0; i < entryCnt; i++) {
         printf("%d.  %s\n", i + 1, manager.GetMedia(i)->Path().c_str());
@@ -92,7 +88,7 @@ void ConsoleView::PrintMediaPage(const int& page, MediaManager& manager) {
         else 
             printf("%d. VIDEO - %s\n", index, manager.GetMedia(index)->Name().c_str());
     };
-    printf("Viewing page %d of %d.\n", page, lastMediaPage);
+    printf("[MEDIA_LIST] Viewing page %d of %d. Total %d file(s)\n", page, lastMediaPage, manager.FileCount());
 }
 
 void ConsoleView::PrintCurrentMediaPage(MediaManager& manager) {
@@ -136,7 +132,7 @@ void ConsoleView::PrintPlaylistByPage(MediaManager& manager, const int& page) {
         cout << index << ". ";
         manager.GetPlaylist(index).Print(false);
     };
-    printf("[PLAYLISTS-ALL] Viewing page %d of %d.\n", page, lastPlPage);
+    printf("[PLAYLISTS-ALL] Viewing page %d of %d. Total %d playlist(s)\n", page, lastPlPage, manager.PlaylistCount());
 }
 
 void ConsoleView::PrintPrevPlaylistPage(MediaManager& manager) {
@@ -166,7 +162,8 @@ void ConsoleView::PrintPlaylistContentPage(Playlist& pl, const int& page) {
         else
             printf("%d. VIDEO - %s\n", index, pl.GetMedia(index)->Name().c_str());
     };
-    printf("[PLAYLIST] Viewing page %d of %d for playlist %s.\n", page, lastContentPage, pl.Name().c_str());
+    printf("[PLAYLIST] Viewing page %d of %d for playlist %s. Total %d file(s)\n", page, lastContentPage, pl.Name().c_str(), 
+        pl.Count());
 }
 
 void ConsoleView::CalculatePlaylistContentPages(Playlist& pl) {

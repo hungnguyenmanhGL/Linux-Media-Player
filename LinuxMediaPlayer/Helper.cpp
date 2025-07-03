@@ -60,6 +60,7 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 char Helper::GetFirstCharInput() {
 	string input;
 	getline(cin, input);
+	if (input.size() == 0) return '*';
 	return input.at(0);
 }
 
