@@ -24,4 +24,8 @@ void VideoFile::Print() {
 	MediaFile::Print();
 	printf(" Bitrate: %d\n"
 		" Codec: %s\n", bitrate, codecEnumMap[codec].c_str());
+	printf("Custom: \n");
+	for (auto pair : customDataMap) {
+		printf(" %s: %s\n", pair.first.c_str(), pair.second.c_str());
+	}
 }

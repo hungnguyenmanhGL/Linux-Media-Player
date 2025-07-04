@@ -11,6 +11,11 @@
 // this will only compile in Linux (Windows will show compile error if not taret linked in cmake)
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
+#include <taglib/id3v1tag.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/textidentificationframe.h>
+#include <taglib/mp4file.h>
+#include <taglib/mp4tag.h>
 
 namespace fs = std::filesystem;
 

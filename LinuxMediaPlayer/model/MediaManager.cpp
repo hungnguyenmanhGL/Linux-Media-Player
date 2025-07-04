@@ -1,7 +1,7 @@
 #include "MediaManager.h"
 #include "Helper.h"
 
-unordered_set<string> audioExtSet = { ".mp3", ".wav" };
+unordered_set<string> audioExtSet = { ".mp3" };
 unordered_set<string> videoExtSet = { ".mp4" };
 
 MediaManager::MediaManager()
@@ -49,6 +49,20 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                         tag->album().toCString(), tag->genre().toCString(), tag->year(),
                         entry.file_size(), fileRef.audioProperties()->lengthInSeconds()));
                     mediaList.push_back(audio);
+
+                    ////get custom tags, if there are any
+                    //TagLib::ID3v1::Tag* v1tag = dynamic_cast<TagLib::ID3v1::Tag*>(fileRef.tag());
+                    //TagLib::ID3v2::Tag* v2tag = dynamic_cast<TagLib::ID3v2::Tag*>(fileRef.tag());
+                    //if (!v1tag) cout << "Failed v1.\n";
+                    //if (!v2tag) cout << "Failed v2.\n";
+                    //TagLib::ID3v2::FrameList frameList = v2tag->frameList("TXXX");
+                    //for (TagLib::ID3v2::Frame* frame : frameList) {
+                    //    TagLib::ID3v2::UserTextIdentificationFrame* userFrame 
+                    //        = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(frame);
+                    //    if (userFrame) {
+                    //        audio->CustomDataMap()[userFrame->description().to8Bit()] = userFrame->toString().to8Bit();
+                    //    }
+                    //}
                 }
                 else if (videoExtSet.contains(ext)) {
                     TagLib::FileRef fileRef(entry.path().c_str());
@@ -56,7 +70,7 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                     if (fileRef.isNull() || fileRef.tag() == nullptr) {
                         cerr << "[TagLib-ERROR] Cannot open file or no tags found for " << entry.path() << endl;
                     }
-                    TagLib::Tag* tag = fileRef.tag();
+                    TagLib::MP4::Tag* tag = dynamic_cast<TagLib::MP4::Tag*>(fileRef.tag());
 
                     shared_ptr<VideoFile> video(new VideoFile(entry.path(), entry.path().filename(),
                         tag->title().toCString(), tag->artist().toCString(),
@@ -64,6 +78,18 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                         entry.file_size(), fileRef.audioProperties()->lengthInSeconds(),
                         mp4Pro->bitrate(), mp4Pro->codec()));
                     mediaList.push_back(video);
+
+                    TagLib::MP4::ItemMap itemMap = tag->itemMap();
+                    for (auto it = itemMap.begin(); it != itemMap.end(); ++it) {
+                        string atomName = it->first.toCString();
+
+                        // Check if custom tag (often starts with ----)
+                        if (atomName.substr(0, 4) == "----") {
+                            TagLib::MP4::Item& item = it->second;
+                            video->CustomDataMap()[atomName] = item.toStringList().toString().to8Bit();
+                        }
+                    }
+
                 }
             }
         }

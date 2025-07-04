@@ -44,6 +44,8 @@ public:
 
 	int PublishYear() { return this->publishYear; }
 
+	unordered_map<string, string> CustomDataMap() { return this->customDataMap; }
+
 	MediaType Type() { return this->type; }
 
 	//setters
@@ -72,6 +74,7 @@ protected:
 	int publishYear;
 	int size;
 	int duration;
+	unordered_map<string, string> customDataMap;
 
 	MediaType type;
 };
