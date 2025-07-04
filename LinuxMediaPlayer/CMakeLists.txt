@@ -20,10 +20,6 @@ find_package(PkgConfig REQUIRED)
 find_package(SDL2_ttf REQUIRED)
 find_package(SDL2_image REQUIRED)
 
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH $ORIGIN)
-
 find_library(ALSA_LIBRARY NAMES asound REQUIRED)
 find_library(PULSE_LIBRARY NAMES pulse REQUIRED)
 find_library(SAMPLERATE_LIBRARY NAMES samplerate REQUIRED)
@@ -64,6 +60,9 @@ add_executable (LinuxMediaPlayer
     #"controller/SDLController.h" "controller/SDLController.cpp"
     "controller/AudioProcessor.h" "controller/AudioProcessor.cpp"
 )
+
+set_target_properties(LinuxMediaPlayer PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+set_target_properties(LinuxMediaPlayer PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(ASSETS_BUILD_DIR "${CMAKE_BINARY_DIR}/assets")
