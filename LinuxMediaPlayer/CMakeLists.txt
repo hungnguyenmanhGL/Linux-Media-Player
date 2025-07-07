@@ -62,7 +62,7 @@ add_executable (LinuxMediaPlayer
 )
 
 set_target_properties(LinuxMediaPlayer PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-set_target_properties(LinuxMediaPlayer PROPERTIES INSTALL_RPATH "$ORIGIN")
+set_target_properties(LinuxMediaPlayer PROPERTIES INSTALL_RPATH "$ORIGIN/libs")
 
 set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(ASSETS_BUILD_DIR "${CMAKE_BINARY_DIR}/assets")
@@ -107,83 +107,19 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET LinuxMediaPlayer PROPERTY CXX_STANDARD 20)
 endif()
 
-# function to avoid copying symlink instead of the real library
-function(resolve_symlink_to_real_path input_path output_var)
-    if(EXISTS "${input_path}")
-        execute_process(
-            COMMAND realpath "${input_path}"
-            OUTPUT_VARIABLE _resolved_path
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            RESULT_VARIABLE _real_path_result
-            # Set WORKING_DIRECTORY to ensure realpath works correctly relative to original location if needed
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        )
-        if(_real_path_result EQUAL 0)
-            # If realpath succeeded, use its output
-            set(${output_var} "${_resolved_path}" PARENT_SCOPE)
-        else()
-            # If realpath failed (e.g., not a symlink, or file doesn't exist, though it should for libraries)
-            # as a fallback, just use the original path. This might lead to issues later if it's a symlink.
-            message(WARNING "realpath failed for ${input_path}. Copying original path. Result: ${_real_path_result}")
-            set(${output_var} "${input_path}" PARENT_SCOPE)
-        endif()
-    else()
-        # If input path does not exist, log a warning and skip, or use original path as fallback
-        message(WARNING "Library path does not exist: ${input_path}")
-        set(${output_var} "${input_path}" PARENT_SCOPE) # Still append to list, might fail later
-    endif()
-endfunction()
+set(BUNDLE_SCRIPT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bundle_deps.py")
 
+# Copy the script to the build directory.
+# This happens during the 'cmake -S . -B build' configuration step.
+file(COPY "${BUNDLE_SCRIPT_SOURCE}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
-set(LIBS_DEST_DIR "$<TARGET_FILE_DIR:LinuxMediaPlayer>")
-
-get_target_property(LIBAV_LINK_LIBS PkgConfig::LIBAV INTERFACE_LINK_LIBRARIES)
-
-set(SHARED_LIBS_TO_COPY "")
-
-foreach(lib ${LIBAV_LINK_LIBS})
-    if(EXISTS "${lib}" AND "${lib}" MATCHES "\\.so$")
-        resolve_symlink_to_real_path("${lib}" REAL_LIB_PATH)
-        list(APPEND SHARED_LIBS_TO_COPY "${REAL_LIB_PATH}")
-    endif()
-endforeach()
-
-if (ALSA_LIBRARY)
-    resolve_symlink_to_real_path("${ALSA_LIBRARY}" REAL_ALSA_LIB_PATH)
-    list(APPEND SHARED_LIBS_TO_COPY "${REAL_ALSA_LIB_PATH}")
-endif()
-if (PULSE_LIBRARY)
-    resolve_symlink_to_real_path("${PULSE_LIBRARY}" REAL_PULSE_LIB_PATH)
-    list(APPEND SHARED_LIBS_TO_COPY "${REAL_PULSE_LIB_PATH}")
-endif()
-if (SAMPLERATE_LIBRARY)
-    resolve_symlink_to_real_path("${SAMPLERATE_LIBRARY}" REAL_SAMPLERATE_LIB_PATH)
-    list(APPEND SHARED_LIBS_TO_COPY "${REAL_SAMPLERATE_LIB_PATH}")
-endif()
-if (XSS_LIBRARY)
-    resolve_symlink_to_real_path("${XSS_LIBRARY}" REAL_XSS_LIB_PATH)
-    list(APPEND SHARED_LIBS_TO_COPY "${REAL_XSS_LIB_PATH}")
-endif()
-if (DECOR_LIBRARY)
-    resolve_symlink_to_real_path("${DECOR_LIBRARY}" REAL_DECOR_LIB_PATH)
-    list(APPEND SHARED_LIBS_TO_COPY "${REAL_DECOR_LIB_PATH}")
-endif()
-if (WEBP_DEMUX_LIBRARY)
-    resolve_symlink_to_real_path("${WEBP_DEMUX_LIBRARY}" REAL_WEBP_DEMUX_LIB_PATH)
-    list(APPEND SHARED_LIBS_TO_COPY "${REAL_WEBP_DEMUX_LIB_PATH}")
-endif()
-
-list(REMOVE_DUPLICATES SHARED_LIBS_TO_COPY)
-
-
+# Optional: Add a custom command to make it executable right after copying.
+# This ensures it's ready to run when you try it from the console.
 add_custom_command(
-    TARGET LinuxMediaPlayer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:LinuxMediaPlayer>"
-    COMMAND ${CMAKE_COMMAND} -E echo "Copying required shared libraries to $<TARGET_FILE_DIR:LinuxMediaPlayer>..."
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SHARED_LIBS_TO_COPY} "$<TARGET_FILE_DIR:LinuxMediaPlayer>"
-
-    # COMMAND ${CMAKE_COMMAND} -E chmod +x "${PATCHELF_SCRIPT_PATH}"
-    # COMMAND "${PATCHELF_SCRIPT_PATH}"
-    # COMMENT "Executing RPATH patching script."
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/bundle_deps.py" # This custom command's output
+    COMMAND chmod +x "${CMAKE_CURRENT_BINARY_DIR}/bundle_deps.py"
+    DEPENDS "${BUNDLE_SCRIPT_SOURCE}" # If source changes, re-run this.
+    COMMENT "Making bundle_deps.sh executable in build directory."
 )
+
 # TODO: Add tests and install targets if needed.
