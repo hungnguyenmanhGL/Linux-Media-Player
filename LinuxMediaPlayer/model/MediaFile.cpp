@@ -21,3 +21,29 @@ void MediaFile::Print() {
 		" Genre: %s\n"
 		" Publish year: %d\n", title.c_str(), artist.c_str(), album.c_str(), genre.c_str(), publishYear);
 }
+
+string MediaFile::CustomKey(int index) {
+	if (index >= customDataMap.size()) {
+		printf("[MEDIAFILE] Index out of custom map's range.\n");
+		return "NON-AVAILABLE";
+	}
+
+	for (auto it = customDataMap.begin(); it != customDataMap.end(); it++) {
+		if (index == 0) return it->first;
+		index--;
+	}
+	return "NON-AVAILABLE";
+}
+
+string MediaFile::CustomValue(int index) {
+	if (index >= customDataMap.size()) {
+		printf("[MEDIAFILE] Index out of custom map's range.\n");
+		return "NON-AVAILABLE";
+	}
+
+	for (auto it = customDataMap.begin(); it != customDataMap.end(); it++) {
+		if (index == 0) return it->second;
+		index--;
+	}
+	return "NON-AVAILABLE";
+}

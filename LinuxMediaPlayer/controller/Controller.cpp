@@ -682,12 +682,26 @@ void Controller::EditMetadata(const int& plIndex, const int& mediaIndex) {
     int dataEnum;
     do {
         console.Seperate();
-        manager.GetMedia(plIndex, mediaIndex)->Print();
+        shared_ptr<MediaFile>& media = manager.GetMedia(plIndex, mediaIndex);
+        media->Print();
         printf("Input index of metadata to edit (Input -1 to cancel):\n"
             " %d = Title, %d = Album , %d = Artist, %d = Genre, %d = Publish year.\n",
             MetadataEnum::TITLE, MetadataEnum::ALBUM, MetadataEnum::ARTIST, MetadataEnum::GENRE, MetadataEnum::PUBLISH_YEAR);
-        dataEnum = Helper::InputInt(-1, MetadataEnum::PUBLISH_YEAR);
-        if (dataEnum >= MetadataEnum::TITLE) manager.EditMetadata(plIndex, mediaIndex, (MetadataEnum)dataEnum);
+        
+        int customCnt = media->CustomDataCount();
+        int totalTagCnt = DEFAULT_METADATA_CNT + customCnt;
+        if (customCnt > 0) printf("Custom tag(s): \n");
+        for (int i = DEFAULT_METADATA_CNT; i < totalTagCnt; i++) {
+            if (i == totalTagCnt - 1) printf(" %d = %s.\n", i, media->CustomKey(i - DEFAULT_METADATA_CNT).c_str());
+            else printf(" %d = %s, ", i, media->CustomKey(i - DEFAULT_METADATA_CNT).c_str());
+        }
+
+        dataEnum = Helper::InputInt(-1, totalTagCnt - 1);
+        if (dataEnum >= MetadataEnum::TITLE && dataEnum <= MetadataEnum::PUBLISH_YEAR) 
+            manager.EditDefaultMetadata(plIndex, mediaIndex, (MetadataEnum)dataEnum);
+        if (dataEnum > MetadataEnum::PUBLISH_YEAR)
+            manager.EditCustomMetadata(plIndex, mediaIndex, dataEnum - DEFAULT_METADATA_CNT);
+
     } while (dataEnum != -1);
 }
 

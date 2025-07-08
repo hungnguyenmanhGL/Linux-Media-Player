@@ -50,19 +50,29 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                         entry.file_size(), fileRef.audioProperties()->lengthInSeconds()));
                     mediaList.push_back(audio);
 
-                    ////get custom tags, if there are any
-                    //TagLib::ID3v1::Tag* v1tag = dynamic_cast<TagLib::ID3v1::Tag*>(fileRef.tag());
-                    //TagLib::ID3v2::Tag* v2tag = dynamic_cast<TagLib::ID3v2::Tag*>(fileRef.tag());
-                    //if (!v1tag) cout << "Failed v1.\n";
-                    //if (!v2tag) cout << "Failed v2.\n";
-                    //TagLib::ID3v2::FrameList frameList = v2tag->frameList("TXXX");
-                    //for (TagLib::ID3v2::Frame* frame : frameList) {
-                    //    TagLib::ID3v2::UserTextIdentificationFrame* userFrame 
-                    //        = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(frame);
-                    //    if (userFrame) {
-                    //        audio->CustomDataMap()[userFrame->description().to8Bit()] = userFrame->toString().to8Bit();
-                    //    }
-                    //}
+                    //get custom tags, if there are any
+                    TagLib::MPEG::File* mpegFile = dynamic_cast<TagLib::MPEG::File*>(fileRef.file());
+                    if (!mpegFile) {
+                        cout << "failed to cast file to MPEG.\n";
+                        continue;
+                    }
+                    TagLib::ID3v2::Tag* id3v2tag = mpegFile->ID3v2Tag();
+                    if (!id3v2tag) {
+                        cout << "Could not get or create ID3v2 tag.\n";
+                        continue;
+                    }
+                    TagLib::ID3v2::FrameList customList = id3v2tag->frameList("TXXX");
+                    for (TagLib::ID3v2::Frame* frame : customList) {
+                        TagLib::ID3v2::UserTextIdentificationFrame* customTextFrame 
+                            = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(frame);
+
+                        if (customTextFrame) {
+                            string tagName = customTextFrame->description().toCString(true);// true for UTF-8
+                            string tagValue = customTextFrame->toString().toCString(true);  
+                            tagValue = tagValue.substr(tagName.length() + 3);
+                            audio->InsertCustomTag(tagName, tagValue);
+                        }
+                    }
                 }
                 else if (videoExtSet.contains(ext)) {
                     TagLib::FileRef fileRef(entry.path().c_str());
@@ -81,15 +91,10 @@ void MediaManager::GetAllMedia(const fs::path& path) {
 
                     TagLib::MP4::ItemMap itemMap = tag->itemMap();
                     for (auto it = itemMap.begin(); it != itemMap.end(); ++it) {
-                        string atomName = it->first.toCString();
-
-                        // Check if custom tag (often starts with ----)
-                        if (atomName.substr(0, 4) == "----") {
-                            TagLib::MP4::Item& item = it->second;
-                            video->CustomDataMap()[atomName] = item.toStringList().toString().to8Bit();
-                        }
+                        string atomName = it->first.to8Bit();
+                        TagLib::MP4::Item& item = it->second;
+                        video->InsertCustomTag(atomName, item.toStringList().toString().to8Bit());
                     }
-
                 }
             }
         }
@@ -137,7 +142,34 @@ void MediaManager::RemoveMediaFromPlaylist(const int& plIndex, const int& mediaI
     printf("Removed %s from playlist %s.\n", mediaName.c_str(), playlists[plIndex].Name().c_str());
 }
 
-void MediaManager::EditMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum) {
+void MediaManager::AddMetadata(const int& plIndex, const int& mediaIndex, const string& key, const string& value) {
+    shared_ptr<MediaFile>& media = GetMedia(mediaIndex);
+    if (plIndex >= 0) media = playlists[plIndex].At(mediaIndex);
+
+    TagLib::FileRef fileRef(media->Path().c_str());
+    if (media->Type() == MediaType::AUDIO) {
+        TagLib::MPEG::File* mpegFile = dynamic_cast<TagLib::MPEG::File*>(fileRef.file());
+        if (!mpegFile) {
+            cout << "failed to cast file to MPEG.\n";
+        }
+        TagLib::ID3v2::Tag* id3v2tag = mpegFile->ID3v2Tag(true);
+        if (!id3v2tag) {
+            cout << "Could not get or create ID3v2 tag.\n";
+        }
+
+        TagLib::ID3v2::UserTextIdentificationFrame* customFrame = new TagLib::ID3v2::UserTextIdentificationFrame();
+        customFrame->setDescription(key);
+        customFrame->setText(value);
+        id3v2tag->addFrame(customFrame);
+        fileRef.save();
+    }
+    else {
+
+    }
+    media->InsertCustomTag(key, value);
+}
+
+void MediaManager::EditDefaultMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum) {
     shared_ptr<MediaFile>& media = GetMedia(mediaIndex);
     if (plIndex >= 0) media = playlists[plIndex].At(mediaIndex);
 
@@ -180,6 +212,37 @@ void MediaManager::EditMetadata(const int& plIndex, const int& mediaIndex, Metad
     }
     }
     fileRef.save();
+}
+
+void MediaManager::EditCustomMetadata(const int& plIndex, const int& mediaIndex, int index) {
+    shared_ptr<MediaFile>& media = GetMedia(mediaIndex);
+    if (plIndex >= 0) media = playlists[plIndex].At(mediaIndex);
+
+    const string& key = media->CustomKey(index);
+    TagLib::FileRef fileRef(media->Path().c_str());
+    if (media->Type() == MediaType::AUDIO) {
+        TagLib::MPEG::File* mpegFile = dynamic_cast<TagLib::MPEG::File*>(fileRef.file());
+        TagLib::ID3v2::Tag* id3v2tag = mpegFile->ID3v2Tag(true);
+        TagLib::ID3v2::UserTextIdentificationFrame* customFrame = new TagLib::ID3v2::UserTextIdentificationFrame();
+
+        TagLib::ID3v2::FrameList customList = id3v2tag->frameList("TXXX");
+        for (TagLib::ID3v2::Frame* frame : customList) {
+            TagLib::ID3v2::UserTextIdentificationFrame* customTextFrame
+                = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(frame);
+
+            if (customTextFrame->description() == key) {
+                string tagValue = Helper::InputString("Input value for custom tag: ", nullptr);
+                customTextFrame->setDescription(key);
+                customTextFrame->setText(tagValue);
+                media->InsertCustomTag(key, tagValue);
+                fileRef.save();
+                break;
+            }
+        }
+    }
+    else {
+
+    }
 }
 
 Playlist& MediaManager::GetPlaylist(const int& index) {

@@ -17,6 +17,8 @@ enum MetadataEnum {
 	PUBLISH_YEAR = 4
 };
 
+const int DEFAULT_METADATA_CNT = 5;
+
 class MediaFile
 {
 public:
@@ -44,9 +46,9 @@ public:
 
 	int PublishYear() { return this->publishYear; }
 
-	unordered_map<string, string> CustomDataMap() { return this->customDataMap; }
-
 	MediaType Type() { return this->type; }
+
+	int CustomDataCount() { return this->customDataMap.size(); }
 
 	//setters
 	void SetName(const string& name) { this->name = name; }
@@ -61,8 +63,15 @@ public:
 
 	void SetGenre(const string& genre) { this->genre = genre; }
 
+	void InsertCustomTag(const string& key, const string& value) {
+		customDataMap[key] = value;
+	}
+
 	virtual void Print();
 
+	string CustomKey(int index);
+
+	string CustomValue(int index);
 
 protected:
 	string path;

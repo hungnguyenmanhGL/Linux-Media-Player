@@ -12,6 +12,7 @@
 #include <taglib/tag.h>
 #include <taglib/id3v1tag.h>
 #include <taglib/id3v2tag.h>
+#include <taglib/mpegfile.h>
 #include <taglib/textidentificationframe.h>
 #include <taglib/mp4file.h>
 #include <taglib/mp4tag.h>
@@ -46,7 +47,11 @@ public:
 	playlistIndex is the target playlist's index in playlists, mediaIndex is target media's index in that playlist*/
 	void RemoveMediaFromPlaylist(const int& playlistIndex, const int& mediaIndex);
 
-	void EditMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum);
+	void AddMetadata(const int& plIndex, const int& mediaIndex, const string& key, const string& value);
+
+	void EditDefaultMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum);
+
+	void EditCustomMetadata(const int& plIndex, const int& mediaIndex, int index);
 
 	//getters
 	int FileCount() { return this->mediaList.size(); }
