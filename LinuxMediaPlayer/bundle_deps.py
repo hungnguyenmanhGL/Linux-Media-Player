@@ -44,6 +44,15 @@ direct_deps_list = get_direct_dependencies(EXECUTABLE_PATH)
 # else:
 #     print("  (No dependencies found or all are filtered system libs)")
 
+CORE_SYSTEM_LIBS = {
+    'libc.so.6',
+    'libm.so.6',
+    'libgcc_s.so.1',
+    'libdl.so.2',
+    'libpthread.so.0',
+    'ld-linux-x86-64.so.2', # The dynamic linker itself
+}
+
 all_dependencies = set()
 processed_files = set()
 files_to_process = [EXECUTABLE_PATH]
@@ -57,6 +66,10 @@ while files_to_process:
     direct_deps_for_current_file = get_direct_dependencies(current_file)
 
     for dep_path in direct_deps_for_current_file:
+        lib_filename = os.path.basename(dep_path)
+        if lib_filename in CORE_SYSTEM_LIBS:
+            continue
+
         if dep_path not in all_dependencies:
             all_dependencies.add(dep_path)      
             files_to_process.append(dep_path) 
