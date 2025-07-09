@@ -50,6 +50,7 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 	bool allowed = false;
 	do {
 		cout << inputMsg;
+
 		getline(cin, res);
 		if (checkFunc != nullptr) allowed = checkFunc(res);
 		else allowed = true;

@@ -41,6 +41,9 @@ public:
 	//edit media's metadata, already have console.Seperate()
 	void EditMetadata(const int& plIndex, const int& mediaIndex);
 
+	//edit metadata loop, REMEMBER to switch back to previous state on the calling function after quitting
+	void EditMetadataLoop(const int& plIndex, const int& mediaIndex);
+
 private:
 	const int MEDIA_PLAYLIST_INDEX = -1;
 

@@ -9,7 +9,8 @@ enum ConsoleState {
 	MEDIA_LIST = 0,
 	PLAYLIST = 1,
 	PLAYLIST_CONTENT = 2,
-	ADD_MEDIA_PLAYLIST = 3
+	ADD_MEDIA_PLAYLIST = 3,
+	EDIT_METADATA = 4
 };
 
 class ConsoleView

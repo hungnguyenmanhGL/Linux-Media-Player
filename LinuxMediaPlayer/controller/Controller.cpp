@@ -325,7 +325,9 @@ void Controller::MainLoop() {
         case 'E': {
             cout << "Input entry index to edit. ";
             int mediaIndex = Helper::InputInt(0, manager.FileCount() - 1);
-            EditMetadata(-1, mediaIndex);
+            EditMetadataLoop(-1, mediaIndex);
+
+            console.SwitchState(ConsoleState::MEDIA_LIST);
             console.Seperate();
             console.PrintCurrentMediaPage(manager);
             break;
@@ -546,7 +548,11 @@ void Controller::ContentLoop(const int& playlistIndex) {
         case 'E': {
             cout << "Input media index to edit. ";
             int index = Helper::InputInt(0, curPl.Count() - 1);
-            EditMetadata(playlistIndex, index);
+            EditMetadataLoop(playlistIndex, index);
+
+            console.SwitchState(ConsoleState::PLAYLIST_CONTENT);
+            console.Seperate();
+            console.PrintPlaylistContentPage(curPl, 0);
             break;
         }
         case 'F': {
@@ -616,6 +622,7 @@ void Controller::ContentLoop(const int& playlistIndex) {
         default: {
             console.Seperate();
             cout << "Invalid command. Try again.\n";
+            console.PrintPlaylistContentPage(curPl, 0);
             break;
         }
         }
@@ -674,6 +681,66 @@ void Controller::AddMediaToPlaylistLoop(Playlist& curPl) {
             console.SwitchState(ConsoleState::PLAYLIST_CONTENT);
             cout << "Cancel adding media. Back to view playlist content.\n";
             return;
+        }
+    } while (cmd != 'B');
+}
+
+void Controller::EditMetadataLoop(const int& plIndex, const int& mediaIndex) {
+    console.Seperate();
+    console.SwitchState(ConsoleState::EDIT_METADATA);
+    shared_ptr<MediaFile>& media = manager.GetMedia(plIndex, mediaIndex);
+
+    char cmd;
+    do {
+        media->Print();
+        console.PrintCmdPrompt();
+        cmd = Helper::GetFirstCharInput();
+        cmd = toupper(cmd);
+
+        switch (cmd) {
+        case 'A': {
+            console.Seperate();
+            media->Print();
+
+            string tagName = Helper::InputString("Input custom tag name (duplicate name will be overwritten): ", nullptr);
+            string tagValue = Helper::InputString("Input custom tag's value: ", nullptr);
+            manager.AddMetadata(plIndex, mediaIndex, tagName, tagValue);
+            break;
+        }
+        case 'E': {
+            console.Seperate();
+            media->Print();
+            //print default tags' indexes
+            printf("Input index of metadata to edit (Input -1 to cancel):\n"
+                " %d = Title, %d = Album , %d = Artist, %d = Genre, %d = Publish year.\n",
+                MetadataEnum::TITLE, MetadataEnum::ALBUM, MetadataEnum::ARTIST, MetadataEnum::GENRE, MetadataEnum::PUBLISH_YEAR);
+            //print index(es) of custom tag(s)
+            int customCnt = media->CustomDataCount();
+            int totalTagCnt = DEFAULT_METADATA_CNT + customCnt;
+            if (customCnt > 0) printf("Custom tag(s): \n");
+            for (int i = DEFAULT_METADATA_CNT; i < totalTagCnt; i++) {
+                if (i == totalTagCnt - 1) printf(" %d = %s.\n", i, media->CustomKey(i - DEFAULT_METADATA_CNT).c_str());
+                else printf(" %d = %s, ", i, media->CustomKey(i - DEFAULT_METADATA_CNT).c_str());
+            }
+
+            int dataEnum = Helper::InputInt(-1, totalTagCnt - 1);
+            if (dataEnum >= MetadataEnum::TITLE && dataEnum <= MetadataEnum::PUBLISH_YEAR)
+                manager.EditDefaultMetadata(plIndex, mediaIndex, (MetadataEnum)dataEnum);
+            if (dataEnum > MetadataEnum::PUBLISH_YEAR)
+                manager.EditCustomMetadata(plIndex, mediaIndex, dataEnum - DEFAULT_METADATA_CNT);
+
+            console.Seperate();
+            break;
+        }
+        case 'B': {
+            cout << "Quit editing. Return...\n";
+            return;
+        }
+        default: {
+            console.Seperate();
+            cout << cmd << " : Invalid command. Try again.\n";
+            break;
+        }
         }
     } while (cmd != 'B');
 }
