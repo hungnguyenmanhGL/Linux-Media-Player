@@ -7,7 +7,6 @@
 #include "AudioFile.h"
 #include "VideoFile.h"
 
-//TagLib is installed on Linux side, 
 #include <taglib/fileref.h>
 #include <taglib/tag.h>
 #include <taglib/id3v1tag.h>
@@ -16,6 +15,7 @@
 #include <taglib/textidentificationframe.h>
 #include <taglib/mp4file.h>
 #include <taglib/mp4tag.h>
+#include <mp4v2/mp4v2.h>
 
 namespace fs = std::filesystem;
 

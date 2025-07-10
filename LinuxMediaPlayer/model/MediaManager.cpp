@@ -4,14 +4,16 @@
 unordered_set<string> audioExtSet = { ".mp3" };
 unordered_set<string> videoExtSet = { ".mp4" };
 
+const string mp4CustomPrefix = "----";
+
 MediaManager::MediaManager()
 {
     playlists.push_back(Playlist("Favorite"));
     playlists.push_back(Playlist("Starred"));
     GetAllMedia("..");
-    playlists[0].AddMedia(mediaList[5]);
+    /*playlists[0].AddMedia(mediaList[5]);
     playlists[0].AddMedia(mediaList[0]);
-    playlists[0].AddMedia(mediaList[12]);
+    playlists[0].AddMedia(mediaList[12]);*/
 }
 
 MediaManager::~MediaManager()
@@ -89,12 +91,9 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                         mp4Pro->bitrate(), mp4Pro->codec()));
                     mediaList.push_back(video);
 
-                    TagLib::MP4::ItemMap itemMap = tag->itemMap();
-                    for (auto it = itemMap.begin(); it != itemMap.end(); ++it) {
-                        string atomName = it->first.to8Bit();
-                        TagLib::MP4::Item& item = it->second;
-                        video->InsertCustomTag(atomName, item.toStringList().toString().to8Bit());
-                    }
+                    MP4FileHandle fileHandle = MP4Read(entry.path().c_str());
+                    cout << MP4Info(fileHandle) << endl;
+                    MP4Close(fileHandle);
                 }
             }
         }
@@ -150,11 +149,11 @@ void MediaManager::AddMetadata(const int& plIndex, const int& mediaIndex, const 
     if (media->Type() == MediaType::AUDIO) {
         TagLib::MPEG::File* mpegFile = dynamic_cast<TagLib::MPEG::File*>(fileRef.file());
         if (!mpegFile) {
-            cout << "failed to cast file to MPEG.\n";
+            std::cout << "failed to cast file to MPEG.\n";
         }
         TagLib::ID3v2::Tag* id3v2tag = mpegFile->ID3v2Tag(true);
         if (!id3v2tag) {
-            cout << "Could not get or create ID3v2 tag.\n";
+            std::cout << "Could not get or create ID3v2 tag.\n";
         }
 
         TagLib::ID3v2::UserTextIdentificationFrame* customFrame = new TagLib::ID3v2::UserTextIdentificationFrame();
@@ -162,11 +161,11 @@ void MediaManager::AddMetadata(const int& plIndex, const int& mediaIndex, const 
         customFrame->setText(value);
         id3v2tag->addFrame(customFrame);
         fileRef.save();
+        media->InsertCustomTag(key, value);
     }
     else {
 
     }
-    media->InsertCustomTag(key, value);
 }
 
 void MediaManager::EditDefaultMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum) {
