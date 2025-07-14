@@ -1,4 +1,8 @@
 #include "VideoFile.h"
+#include <taglib/fileref.h>
+#include <taglib/mp4file.h>
+#include <taglib/mp4tag.h>
+#include <iostream>
 
 unordered_map<TagLib::MP4::Properties::Codec, string> codecEnumMap{
 	{TagLib::MP4::Properties::Unknown, "Unknown"},
@@ -27,5 +31,13 @@ void VideoFile::Print() {
 	printf("Custom: \n");
 	for (auto pair : customDataMap) {
 		printf(" %s: %s\n", pair.first.c_str(), pair.second.c_str());
+	}
+
+	TagLib::FileRef fileRef(path.c_str());
+	TagLib::MP4::Tag* tag = dynamic_cast<TagLib::MP4::Tag*>(fileRef.tag());
+
+	TagLib::MP4::ItemMap itemMap = tag->itemMap();
+	for (auto it = itemMap.begin(); it != itemMap.end(); it++) {
+		cout << it->first.to8Bit(true) << ": " << it->second.toStringList().toString().to8Bit(true) << endl;
 	}
 }

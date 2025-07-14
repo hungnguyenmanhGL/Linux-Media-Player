@@ -67,6 +67,8 @@ public:
 		customDataMap[key] = value;
 	}
 
+	void RemoveCustomTag(const string& key) { customDataMap.erase(key); }
+
 	virtual void Print();
 
 	string CustomKey(int index);

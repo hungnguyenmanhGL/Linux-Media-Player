@@ -90,10 +90,6 @@ void MediaManager::GetAllMedia(const fs::path& path) {
                         entry.file_size(), fileRef.audioProperties()->lengthInSeconds(),
                         mp4Pro->bitrate(), mp4Pro->codec()));
                     mediaList.push_back(video);
-
-                    MP4FileHandle fileHandle = MP4Read(entry.path().c_str());
-                    cout << MP4Info(fileHandle) << endl;
-                    MP4Close(fileHandle);
                 }
             }
         }
@@ -164,7 +160,48 @@ void MediaManager::AddMetadata(const int& plIndex, const int& mediaIndex, const 
         media->InsertCustomTag(key, value);
     }
     else {
+        TagLib::FileRef fileRef(media->Path().c_str());
+        TagLib::MP4::Properties* mp4Pro = dynamic_cast<TagLib::MP4::Properties*>(fileRef.audioProperties());
+        TagLib::MP4::Tag* tag = dynamic_cast<TagLib::MP4::Tag*>(fileRef.tag());
 
+        TagLib::MP4::Item item = TagLib::MP4::Item(TagLib::StringList("Hello"));
+        tag->setItem(mp4CustomPrefix + key, item);
+        fileRef.save();
+    }
+}
+
+void MediaManager::RemoveMetadata(const int& plIndex, const int& mediaIndex, const int& tagIndex) {
+    shared_ptr<MediaFile>& media = GetMedia(mediaIndex);
+    if (plIndex >= 0) media = playlists[plIndex].At(mediaIndex);
+
+    string key = media->CustomKey(tagIndex);
+
+    TagLib::FileRef fileRef(media->Path().c_str());
+    if (media->Type() == MediaType::AUDIO) {
+        TagLib::MPEG::File* mpegFile = dynamic_cast<TagLib::MPEG::File*>(fileRef.file());
+        if (!mpegFile) {
+            std::cout << "failed to cast file to MPEG.\n";
+        }
+        TagLib::ID3v2::Tag* id3v2tag = mpegFile->ID3v2Tag(true);
+        if (!id3v2tag) {
+            std::cout << "Could not get or create ID3v2 tag.\n";
+        }
+
+        TagLib::ID3v2::UserTextIdentificationFrame* frameToRemove = nullptr;
+        for (auto it = id3v2tag->frameList("TXXX").begin(); it != id3v2tag->frameList("TXXX").end(); it++) {
+            TagLib::ID3v2::UserTextIdentificationFrame* customTextFrame
+                = dynamic_cast<TagLib::ID3v2::UserTextIdentificationFrame*>(*(it));
+            if (customTextFrame) {
+                string tagName = customTextFrame->description().to8Bit(true);
+                if (tagName == key) {
+                    frameToRemove = customTextFrame;
+                    break;
+                }
+            }
+        }
+        id3v2tag->removeFrame(frameToRemove, true);
+        fileRef.save();
+        media->RemoveCustomTag(key);
     }
 }
 

@@ -732,6 +732,27 @@ void Controller::EditMetadataLoop(const int& plIndex, const int& mediaIndex) {
             console.Seperate();
             break;
         }
+        case 'R': {
+            console.Seperate();
+            int customCnt = media->CustomDataCount();
+            if (customCnt <= 0) {
+                cout << "0 custom tag to delete. Cancel...\n";
+                break;
+            }
+            for (int i = 0; i < customCnt; i++) {
+                if (i == customCnt - 1) printf(" %d = %s.\n", i, media->CustomKey(i).c_str());
+                else printf(" %d = %s, ", i, media->CustomKey(i).c_str());
+            }
+            printf("Input index of metadata to remove (Input -1 to cancel):\n");
+            int tagIndex = Helper::InputInt(-1, customCnt - 1);
+            if (tagIndex == -1) {
+                cout << "Removal cancelled. Returning...\n";
+                break;
+            }
+            manager.RemoveMetadata(plIndex, mediaIndex, tagIndex);
+            console.Seperate();
+            break;
+        }
         case 'B': {
             cout << "Quit editing. Return...\n";
             return;

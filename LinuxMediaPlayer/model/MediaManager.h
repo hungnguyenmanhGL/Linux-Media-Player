@@ -15,7 +15,6 @@
 #include <taglib/textidentificationframe.h>
 #include <taglib/mp4file.h>
 #include <taglib/mp4tag.h>
-#include <mp4v2/mp4v2.h>
 
 namespace fs = std::filesystem;
 
@@ -48,6 +47,8 @@ public:
 	void RemoveMediaFromPlaylist(const int& playlistIndex, const int& mediaIndex);
 
 	void AddMetadata(const int& plIndex, const int& mediaIndex, const string& key, const string& value);
+
+	void RemoveMetadata(const int& plIndex, const int& mediaIndex, const int& tagIndex);
 
 	void EditDefaultMetadata(const int& plIndex, const int& mediaIndex, MetadataEnum dataEnum);
 

@@ -59,8 +59,8 @@ void ConsoleView::PrintCmdPrompt() {
         break;
     }
     case ConsoleState::EDIT_METADATA: {
-        cout << "Editting metadata. Input command.\n"
-            " [A]dd custom tag\n"
+        cout << "Editing metadata. Input command.\n"
+            " [A]dd custom tag, [R]emove custom tag\n"
             " [E]dit tag value\n"
             " [B]ack. Command: ";
         break;

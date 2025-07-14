@@ -46,14 +46,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(sdl_fontcache)
 
-FetchContent_Declare(
-    mp4v2
-    GIT_REPOSITORY https://github.com/enzo1982/mp4v2
-    GIT_TAG main   
-    #SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/mp4v2
-)
-FetchContent_MakeAvailable(mp4v2)
-
 # Add source to this project's executable.
 add_executable (LinuxMediaPlayer 
     "LinuxMediaPlayer.cpp" 
@@ -72,7 +64,7 @@ add_executable (LinuxMediaPlayer
 )
 
 set_target_properties(LinuxMediaPlayer PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-set_target_properties(LinuxMediaPlayer PROPERTIES INSTALL_RPATH "$ORIGIN/libs:$ORIGIN/_deps/mp4v2-build")
+set_target_properties(LinuxMediaPlayer PROPERTIES INSTALL_RPATH "$ORIGIN/libs")
 
 set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(ASSETS_BUILD_DIR "${CMAKE_BINARY_DIR}/assets")
@@ -92,8 +84,6 @@ target_include_directories(LinuxMediaPlayer
     PUBLIC controller
     PUBLIC ${LIBAV_INCLUDE_DIRS}
     $<BUILD_INTERFACE:${sdl_fontcache_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${mp4v2_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${mp4v2_BINARY_DIR}>
 )
 
 target_link_libraries(LinuxMediaPlayer TagLib::tag)
@@ -102,7 +92,6 @@ target_link_libraries(LinuxMediaPlayer
     SDL2_ttf::SDL2_ttf-static  
     SDL2_image::SDL2_image-static
     FontCache
-    mp4v2
 )
 
 target_link_libraries(LinuxMediaPlayer PkgConfig::LIBAV)
@@ -123,12 +112,9 @@ endif()
 
 set(BUNDLE_SCRIPT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bundle_deps.py")
 
-# Copy the script to the build directory.
-# This happens during the 'cmake -S . -B build' configuration step.
 file(COPY "${BUNDLE_SCRIPT_SOURCE}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 
-# Optional: Add a custom command to make it executable right after copying.
-# This ensures it's ready to run when you try it from the console.
+# Allow execution right for the bundle script in build folder
 add_custom_command(
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/bundle_deps.py" # This custom command's output
     COMMAND chmod +x "${CMAKE_CURRENT_BINARY_DIR}/bundle_deps.py"
