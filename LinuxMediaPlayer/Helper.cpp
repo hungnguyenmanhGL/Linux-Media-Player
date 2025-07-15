@@ -17,13 +17,13 @@ int Helper::InputInt(int minInclu, int maxInclu) {
 
 			if (cin.fail()) {
 				cin.clear();
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 				cout << "Invalid input for int. Try again.\n";
 			}
-			if (val < minInclu) {
-				cout << "Value out of range.\n";
+			else {
+				cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				if (val < minInclu) cout << "Input is smaller than minimum value.\n";
 			}
-			cin.ignore();
 		} while (cin.fail() || val < minInclu);
 	}
 	else {
@@ -33,13 +33,13 @@ int Helper::InputInt(int minInclu, int maxInclu) {
 
 			if (cin.fail()) {
 				cin.clear();
-				std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 				cout << "Invalid input for int. Try again.\n";
 			}
-			if (val < minInclu || val > maxInclu) {
-				cout << "Value out of range.\n";
+			else {
+				cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				if (val < minInclu || val > maxInclu) cout << "Input is out of valid range.\n";
 			}
-			cin.ignore();
 		} while (cin.fail() || val < minInclu || val > maxInclu);
 	}
 	return val;
@@ -49,8 +49,13 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 	string res;
 	bool allowed = false;
 	do {
-		cout << inputMsg;
+		/*std::cout << "  Good bit (no errors): " << (std::cin.good() ? "true" : "false") << std::endl;
+		std::cout << "  EOF bit (end of file): " << (std::cin.eof() ? "true" : "false") << std::endl;
+		std::cout << "  Fail bit (read error): " << (std::cin.fail() ? "true" : "false") << std::endl;
+		std::cout << "  Bad bit (stream corrupted): " << (std::cin.bad() ? "true" : "false") << std::endl;
+		std::cout << "-------------------------------------\n" << std::endl;*/
 
+		cout << inputMsg;
 		getline(cin, res);
 		if (checkFunc != nullptr) allowed = checkFunc(res);
 		else allowed = true;

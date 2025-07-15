@@ -2,6 +2,7 @@
 #include <string>
 #include <stdio.h>
 #include <unordered_map>
+#include "Helper.h"
 using namespace std;
 
 enum MediaType {

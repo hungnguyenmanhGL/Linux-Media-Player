@@ -13,7 +13,7 @@ void MediaFile::Print() {
 		" Path: %s\n"
 		" Name: %s\n"
 		" Size: %d bytes\n"
-		" Duration: %d secs\n", path.c_str(), name.c_str(), size, duration);
+		" Duration: %s\n", path.c_str(), name.c_str(), size, Helper::GetAudioDurationString(duration).c_str());
 	printf("Metadata: \n"
 		" Title: %s\n"
 		" Artist: %s\n"

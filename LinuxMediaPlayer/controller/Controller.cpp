@@ -700,6 +700,10 @@ void Controller::EditMetadataLoop(const int& plIndex, const int& mediaIndex) {
         switch (cmd) {
         case 'A': {
             console.Seperate();
+            if (media->Type() == MediaType::VIDEO) {
+                cout << "Custom tag is not supported for .mp4. Returning...\n";
+                break;
+            }
             media->Print();
 
             string tagName = Helper::InputString("Input custom tag name (duplicate name will be overwritten): ", nullptr);
@@ -734,6 +738,11 @@ void Controller::EditMetadataLoop(const int& plIndex, const int& mediaIndex) {
         }
         case 'R': {
             console.Seperate();
+            if (media->Type() == MediaType::VIDEO) {
+                cout << "Custom tag is not supported for .mp4. Returning...\n";
+                break;
+            }
+
             int customCnt = media->CustomDataCount();
             if (customCnt <= 0) {
                 cout << "0 custom tag to delete. Cancel...\n";

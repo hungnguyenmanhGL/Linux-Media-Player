@@ -44,7 +44,7 @@ void ConsoleView::PrintCmdPrompt() {
     }
     case ConsoleState::PLAYLIST_CONTENT: { //can call play media from here
         cout << "Viewing playlist's content. Input command.\n"
-            " [P]rev media page, [N]ext media page, [G]o to page\n"
+            " [P]rev page, [N]ext page, [G]o to page\n"
             " [A]dd media, [R]emove media\n"
             " Show media [D]etails, [E]dit metadata\n"
             " [F]Play media\n"
@@ -54,13 +54,13 @@ void ConsoleView::PrintCmdPrompt() {
     case ConsoleState::ADD_MEDIA_PLAYLIST: {
         cout << "Adding media to playlist. Input command.\n"
             " [P]rev media page, [N]ext media page, [G]o to page\n"
-            " [A]dd media to playlist\n"
+            " [A]dd media to playlist by index\n"
             " Other inputs = Cancel. Command: ";
         break;
     }
     case ConsoleState::EDIT_METADATA: {
         cout << "Editing metadata. Input command.\n"
-            " [A]dd custom tag, [R]emove custom tag\n"
+            " [A]dd custom tag, [R]emove custom tag (Only for .mp3)\n"
             " [E]dit tag value\n"
             " [B]ack. Command: ";
         break;

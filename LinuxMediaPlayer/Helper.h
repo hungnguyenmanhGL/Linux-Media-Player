@@ -12,6 +12,7 @@ public:
 	Helper();
 	~Helper();
 
+	//set maxInclu < minInclu if upper limit is not used
 	static int InputInt(int minInclu, int maxInclu = -999);
 
 	//input string with a function pointer to check validity, invalid string msg should be printed by check function
