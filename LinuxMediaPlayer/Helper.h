@@ -23,5 +23,5 @@ public:
 	static string GetAudioDurationString(int secs);
 
 private:
-
+	static void QuitOnSIGINT();
 };

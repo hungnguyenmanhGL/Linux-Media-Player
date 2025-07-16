@@ -8,6 +8,12 @@ Helper::~Helper()
 {
 }
 
+void Helper::QuitOnSIGINT() {
+	cout << "\n";
+	cerr << "End of input (EOF) detected. Quitting...\n";
+	exit(0);
+}
+
 int Helper::InputInt(int minInclu, int maxInclu) {
 	int val = minInclu;
 	if (minInclu >= maxInclu) {
@@ -15,6 +21,8 @@ int Helper::InputInt(int minInclu, int maxInclu) {
 			printf("Input value (%d <= value): ", minInclu);
 			cin >> val;
 
+			if (cin.eof()) QuitOnSIGINT();
+			
 			if (cin.fail()) {
 				cin.clear();
 				cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -30,6 +38,8 @@ int Helper::InputInt(int minInclu, int maxInclu) {
 		do {
 			printf("Input value (%d <= value <= %d): ", minInclu, maxInclu);
 			cin >> val;
+
+			if (cin.eof()) QuitOnSIGINT();
 
 			if (cin.fail()) {
 				cin.clear();
@@ -57,6 +67,8 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 
 		cout << inputMsg;
 		getline(cin, res);
+		if (cin.eof()) QuitOnSIGINT();
+
 		if (checkFunc != nullptr) allowed = checkFunc(res);
 		else allowed = true;
 	} while (!allowed);
@@ -66,6 +78,14 @@ string Helper::InputString(const string& inputMsg, function<bool(const string&)>
 char Helper::GetFirstCharInput() {
 	string input;
 	getline(cin, input);
+
+	if (cin.eof()) QuitOnSIGINT();
+	if (cin.fail()) {
+		cin.clear();
+		cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+		return '*';
+	}
+
 	if (input.size() == 0) return '*';
 	return input.at(0);
 }
